@@ -1,0 +1,74 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<nav class="navbar navbar-expand-md navbar-dark bg-dark pb-2 pt-2">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="">
+			<img src="images/tabtrackerlogo.png" aria-hidden="true" height="40rem"/>
+			TabTracker
+		</a>
+		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+		aria-controls="navbarCollapse" aria-label="Toggle navigation" >
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarCollapse" >
+			<ul class="navbar-nav me-auto mb-2 mb-md-0">
+				<AuthorizeView>
+					<li class="nav-item">
+						<NavLink class="nav-link" href="jobs" >
+							<i class="bi bi-briefcase" aria-hidden="true"></i> Jobs
+						</NavLink>
+					</li>
+					<li class="nav-item">
+						<NavLink class="nav-link" href="products">
+							<i class="bi bi-cup-straw" aria-hidden="true"></i> Products
+						</NavLink>
+					</li>
+				</AuthorizeView>
+
+			</ul>
+			<ul class="d-flex navbar-nav mb-2 mb-md-0">
+				<AuthorizeView Context="authContext">
+
+					<Authorized>
+						<li class="nav-item">
+							<NavLink class="nav-link btn btn-dark active me-2" href="Account/Manage">
+								@(authContext?.User?.Identity?.Name)
+							</NavLink>
+						</li>
+						<li class="nav-item">
+							<form action="Account/Logout" method="post">
+								<AntiforgeryToken />
+								<input type="hidden" name="ReturnUrl" value="" />
+								<button type="submit" class="nav-link btn btn-success">
+									<span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+								</button>
+							</form>
+						</li>
+					</Authorized>
+
+					<NotAuthorized>
+						<li class="nav-item">
+							<NavLink class="nav-link" href="Account/Register">
+								<span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+							</NavLink>
+						</li>
+						<li class="nav-item">
+							<NavLink class="nav-link btn btn-success" href="Account/Login">
+								<span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+							</NavLink>
+						</li>
+					</NotAuthorized>
+
+
+				</AuthorizeView>
+			</ul>
+		</div>
+	</div>
+</nav>
+
+@code {
+
+	private AuthenticationState? authContext => AuthenticationStateProvider.GetAuthenticationStateAsync().Result;
+
+}

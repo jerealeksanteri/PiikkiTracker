@@ -1,0 +1,121 @@
+﻿@page "/products/create"
+@page "/products/update/{id:int}"
+@using PiikkiTracker.Utility
+@inject IProductRepository _productRepository
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _js
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+
+                <EditForm Model="product" FormName="ProductUpsertForm" OnValidSubmit="UpsertProduct">
+                    <DataAnnotationsValidator/>
+                    <div class="border p-3 mt-4">
+                        <div class="form-floating py-3 col-12">
+                            <InputText @bind-Value="product.Name" class="form-control" id="Name" placeholder="Name" />
+                            <label for="Name">Name</label>
+                            <ValidationMessage For="@(() => product.Name)" />
+                        </div>
+                        <div class="form-floating py-3 col-12">
+                            <InputText @bind-Value="product.Description" class="form-control" id="Description" placeholder="Description" />
+                            <label for="Description">Description</label>
+                            <ValidationMessage For="@(() => product.Description)" />
+                        </div>
+                        <div class="form-floating py-3 col-12">
+                            <InputNumber @bind-Value="product.Price" class="form-control" id="Price" placeholder="Price" />
+                            <label for="Price">Price</label>
+                            <ValidationMessage For="@(() => product.Price)" />
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6 col-md-3">
+                                <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                    <i class="bi bi-save"></i> Save
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <a href="products" class="btn btn-secondary form-control" disabled="@IsLoading">
+                                    <i class="bi bi-arrow-bar-left"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+
+
+            </div>
+
+        </div>
+    </AuthorizeView>
+
+    <AuthorizedView Roles="@SD.Role_Member" Context="authContext">
+                <p><em>Not an admin</em></p>
+    </AuthorizedView>
+
+    <NotAuthorized Context="authContext">
+                <p><em>Not authorized to view this page</em></p>
+    </NotAuthorized>
+}
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsLoading { get; set; } = true;
+
+    [SupplyParameterFromForm]
+    public Product product { get; set; } = new Product();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadProduct();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProduct()
+    {
+        if (Id != 0)
+        {
+            product = await _productRepository.GetProductByIdAsync(Id);
+        }
+    }
+
+    private async Task UpsertProduct()
+    {
+        IsLoading = true;
+        if (Id == 0)
+        {
+            await _productRepository.CreateProductAsync(product);
+            await _js.ToastrSuccess("Product created successfully");
+        }
+        else
+        {
+            await _productRepository.UpdateProductAsync(product);
+            await _js.ToastrSuccess("Product saved successfully");
+        }
+        IsLoading = false;
+
+        _navigationManager.NavigateTo("products");
+    }
+
+
+
+
+}

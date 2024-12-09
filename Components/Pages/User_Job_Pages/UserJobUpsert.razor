@@ -1,0 +1,91 @@
+﻿@page "/userjobs/create"
+@page "/userjobs/upsert/{Id:int}"
+@using PiikkiTracker.Repository
+@using PiikkiTracker.Utility
+@inject IUserJobRepository _userJobRepository
+@inject IJobRepository _jobRepository
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _js
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView>
+        <Authorized>
+            <div class="card shadow border-0 mt-4">
+                <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <p class="pt-4"><em>Unauthorized</em></p>
+        </NotAuthorized>
+    </AuthorizeView>
+    
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; } = 0;
+
+    public bool IsLoading { get; set; } = true;
+
+    [SupplyParameterFromForm]
+    public UserJob UserJob { get; set; } = new UserJob();
+
+    private IEnumerable<Job> Jobs { get; set; } = new List<Job>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUserJob();
+            await LoadJobs();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadJobs()
+    {
+        Jobs = await _jobRepository.GetAllJobsAsync();
+    }
+
+    private async Task LoadUserJob()
+    {
+        if (Id != 0)
+        {
+            UserJob = await _userJobRepository.GetUserJobByIdAsync(Id);
+        }
+    }
+
+    private async Task UpsertUserJob()
+    {
+        IsLoading = true;
+        if (Id == 0)
+        {
+            await _userJobRepository.CreateUserJobAsync(UserJob);
+            await _js.ToastrSuccess("UserJob created successfully");
+        }
+        else
+        {
+            await _userJobRepository.UpdateUserJobAsync(UserJob);
+            await _js.ToastrSuccess("UserJob saved successfully");
+        }
+        IsLoading = false;
+        _navigationManager.NavigateTo("userjobs");
+    }
+
+
+
+
+}

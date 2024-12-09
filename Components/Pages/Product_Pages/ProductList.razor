@@ -1,0 +1,134 @@
+﻿@page "/products"
+@using PiikkiTracker.Utility
+@inject IProductRepository _productRepository
+@inject IJSRuntime _js
+
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    
+
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Products</h2>
+                </div>
+            </div>
+        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="card-body p-4">
+                    <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                        <div class="col-12 text-end">
+                            <a href="products/create" class="btn btn-sm btn-secondary" style="width:150px">
+                                <i class="bi bi-plus-square"></i> Create a new Product
+                            </a>
+                        </div>
+                    </AuthorizeView>
+                <h4 class="text-center">Product List</h4>
+                @if (products.Any())
+                {
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in products)
+                            {
+                                <tr>
+                                    <td>@product.Name</td>
+                                    <td>@product.Description</td>
+                                    <td>@product.Price</td>
+                                    <td>@product.CreatedDate</td>
+                                    <td>
+                                        <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                                            <a class="btn btn-sm btn-primary" href="@($"products/update/{product.Id}")">
+                                                Edit
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(product.Id)">
+                                                <i class="bi bi-trash-3"></i> Delete
+                                            </button>
+                                        </AuthorizeView>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No products found.</p>
+                }
+            </div>
+            </Authorized>
+            <NotAuthorized>
+                <p class="m-5"><em>You are not authorized to view this page</em></p>
+            </NotAuthorized>
+        </AuthorizeView>    
+    </div>
+    
+
+    
+}
+
+@code {
+    private bool IsLoading = true;
+    private int DeleteProductID { get; set; } = 0;
+    IEnumerable<Product> products = new List<Product>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadProducts();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProducts()
+    {
+        products = await _productRepository.GetAllProductsAsync();
+    }
+
+    private void HandleDelete(int productId)
+    {
+        DeleteProductID = productId;
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+        if (DeleteProductID != 0 && isConfirmed)
+        {
+            var result = await _productRepository.DeleteProductAsync(DeleteProductID);
+            if (result)
+            {
+                _js?.ToastrSuccess("Product deleted successfully.");
+            }
+            else
+            {
+                _js?.ToastrError("There was an error while deleting");
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadProducts();
+        }
+
+        DeleteProductID = 0;
+        IsLoading = false;
+    }
+}

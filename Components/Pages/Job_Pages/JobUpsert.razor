@@ -1,0 +1,129 @@
+﻿@page "/jobs/create"
+@page "/jobs/update/{id:int}"
+@using PiikkiTracker.Utility
+@inject IJobRepository _jobRepository
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _js
+
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <h2 class="text-white py-2">@(Id==0?"Create":"Update")</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+
+                <EditForm Model="job" FormName="JobUpsertForm" OnValidSubmit="UpsertJob">
+                    <DataAnnotationsValidator/>
+
+                    <div class="border p-3 mt-4">
+                        <div class="form-floating py-3 col-12">
+                            <InputText @bind-Value="job.Name" class="form-control" id="Name" placeholder="Name" />
+                            <label for="Name">Name</label>
+                            <ValidationMessage For="@(() => job.Name)" />
+                        </div>
+
+                        <div class="form-floating py-3 col-12">
+                            <InputText @bind-Value="job.Description" class="form-control" id="Description" placeholder="Description" />
+                            <label for="Description">Description</label>
+                            <ValidationMessage For="@(() => job.Description)" />
+                        </div>
+
+                        <div class="form-floating py-3 col-12">
+                            <InputNumber @bind-Value="job.Payment" class="form-control" id="Payment" placeholder="Payment" />
+                            <label for="Payment">Payment</label>
+                            <ValidationMessage For="@(() => job.Payment)" />
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-6 col-md-3">
+                                <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                    <i class="bi bi-save"></i> Save
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <a href="jobs" class="btn btn-secondary form-control" disabled="@IsLoading">
+                                    <i class="bi bi-arrow-bar-left"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </EditForm>
+
+
+            </div>
+        </div>
+    </AuthorizeView>
+
+    <AuthorizedView Roles="@SD.Role_Member" Context="authContext">
+                <p><em>Not an admin</em></p>
+    </AuthorizedView>
+
+    <NotAuthorized Context="authContext">
+                <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsLoading { get; set; } = true;
+
+    [SupplyParameterFromForm]
+    public Job job { get; set; } = new Job();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadJob();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task LoadJob()
+    {
+        if (Id > 0){
+            job = await _jobRepository.GetJobByIdAsync(Id);
+        }
+    }
+
+    private async Task UpsertJob()
+    {
+        IsLoading = true;
+
+        if (Id == 0)
+        {
+            // Create
+            await _jobRepository.CreateJobAsync(job);
+            await _js.ToastrSuccess("Job created successfully");
+        }
+        else
+        {
+            // Update
+            await _jobRepository.UpdateJobAsync(job);
+            await _js.ToastrSuccess("Job saved successfully");
+        }
+
+        IsLoading = false;
+
+        _navigationManager.NavigateTo("jobs");
+    }
+}

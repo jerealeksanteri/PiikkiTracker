@@ -1,0 +1,29 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+
+<div class="card shadow border-0 mt-4">
+    <div class="card-body p-4">
+        <div class="card-title text-center display-6">
+            Welcome to TabTracker!
+        </div>
+        
+        <AuthorizeView>
+            <Authorized>
+
+                <div class="mb-3 col-1 text-start">
+                    <a href="userjobs/create" class="btn btn-sm btn-primary" style="width:250px">
+                        <i class="bi bi-plus-square"></i> Log a new Job done
+                    </a>
+                </div>
+                
+            </Authorized>
+            <NotAuthorized>
+                <p class="pt-4"><em>Continue to sign in!</em></p>
+
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+

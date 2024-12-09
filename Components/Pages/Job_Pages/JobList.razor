@@ -1,0 +1,138 @@
+﻿@page "/jobs"
+@using PiikkiTracker.Utility
+@inject IJobRepository _jobRepository
+@inject IJSRuntime _js
+
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    
+    
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <h2 class="text-white py-2">Jobs</h2>
+                    </div>
+                </div>
+            </div>
+            <AuthorizeView>
+                <Authorized>
+                    <div class="card-body p-4">
+
+                        <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                            <div class="col-12 text-end">
+                                <a href="jobs/create" class="btn btn-sm btn-secondary" style="width:150px">
+                                    <i class="bi bi-plus-square"></i> Create a new Job
+                                </a>
+                            </div>
+                        </AuthorizeView>
+
+                        <h4 class="text-center">Job List</h4>
+                        @if (jobs.Any())
+                        {
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Payment</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var job in jobs)
+                                    {
+                                        <tr>
+                                            <td>@job.Name</td>
+                                            <td>@job.Description</td>
+                                            <td>@job.Payment</td>
+                                            <td>@job.CreatedDate</td>
+                                            <td>
+                                                <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                                                    <a class="btn btn-sm btn-primary" href="@($"jobs/update/{job.Id}")">Edit</a>
+                                                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(job.Id)">
+                                                        <i class="bi bi-trash-3"></i> Delete
+                                                    </button>
+                                                </AuthorizeView>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p>No Jobs found</p>
+                        }
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <p class="m-5"><em>You are not authorized to view this page</em></p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
+    
+
+
+}
+
+
+@code {
+    public bool IsLoading { get; set; } = true;
+    private int DeleteJobID { get; set; } = 0;
+    public IEnumerable<Job> jobs { get; set; } = new List<Job>();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadJobs();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadJobs()
+    {
+        jobs = await _jobRepository.GetAllJobsAsync();
+    }
+
+    private void HandleDelete(int id)
+    {
+        DeleteJobID = id;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+
+        if (isConfirmed && DeleteJobID != 0)
+        {
+            var result = await _jobRepository.DeleteJobAsync(DeleteJobID);
+            if (result){
+                _js?.ToastrSuccess("Job Deleted Successfully");
+            }
+            else {
+                _js?.ToastrError("There was an error while deleting");
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadJobs();
+            
+        }
+
+        DeleteJobID = 0;
+        IsLoading = false;
+    }
+}

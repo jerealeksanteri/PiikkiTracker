@@ -1,0 +1,32 @@
+﻿
+<!-- Modal -->
+<div class="modal fade" id="deletionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">Delete</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @onclick="()=>ConfirmationClicked(false)">Close</button>
+                <button type="button" class="btn btn-danger" @onclick="()=>ConfirmationClicked(true)">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public EventCallback<bool> OnModalConfirmation { get; set; }
+    
+    public async Task ConfirmationClicked(bool value)
+    {
+        if (value)
+        {
+            await OnModalConfirmation.InvokeAsync(true);
+        }
+    }
+}
