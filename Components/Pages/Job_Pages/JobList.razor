@@ -21,11 +21,11 @@ else
                     </div>
                 </div>
             </div>
-            <AuthorizeView>
+            <AuthorizeView Context="authContext">
                 <Authorized>
                     <div class="card-body p-4">
 
-                        <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                        <AuthorizeView Roles="@SD.Role_Admin">
                             <div class="col-12 text-end">
                                 <a href="jobs/create" class="btn btn-sm btn-secondary" style="width:150px">
                                     <i class="bi bi-plus-square"></i> Create a new Job
@@ -55,7 +55,7 @@ else
                                             <td>@job.Payment</td>
                                             <td>@job.CreatedDate</td>
                                             <td>
-                                                <AuthorizeView Roles="@SD.Role_Admin" Context="authContext">
+                                                <AuthorizeView Roles="@SD.Role_Admin">
                                                     <a class="btn btn-sm btn-primary" href="@($"jobs/update/{job.Id}")">Edit</a>
                                                     <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(job.Id)">
                                                         <i class="bi bi-trash-3"></i> Delete

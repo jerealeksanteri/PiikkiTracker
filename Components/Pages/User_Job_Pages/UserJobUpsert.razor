@@ -1,10 +1,13 @@
 ﻿@page "/userjobs/create"
 @page "/userjobs/upsert/{Id:int}"
+@using Microsoft.AspNetCore.Identity
 @using PiikkiTracker.Repository
 @using PiikkiTracker.Utility
 @inject IUserJobRepository _userJobRepository
 @inject IJobRepository _jobRepository
 @inject NavigationManager _navigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime _js
 
 @if (IsLoading)
@@ -13,26 +16,164 @@
 }
 else
 {
-    <AuthorizeView>
+    <AuthorizeView Context="authContext">
         <Authorized>
-            <div class="card shadow border-0 mt-4">
-                <div class="card-header bg-black bg-gradient m-lg-0 py-3">
-                    <div class="row">
-                        <div class="col-12 text-center">
-                            <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+            @if (IsMember)
+            {
+                <div class="card shadow border-0 mt-4">
+                    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="card-body p-4">
+
+                        <EditForm Model="userJob" FormName="JobUpsertMemberForm" OnValidSubmit="UpsertUserJob">
+                            <DataAnnotationsValidator />
+                            <div>
+                                <ValidationSummary />
+                            </div>
+
+                            <div class="border p-3 mt-4">
+                                <div class="form-floating py-3 col-12">
+                                    <InputText @bind-Value="userJob.Event" class="form-control" id="Event" placeholder="Enter Event name" />
+                                    <label for="Event">Event</label>
+                                    <ValidationMessage For="@(() => userJob.Event)" />
+                                </div>
+
+                                <div class="form-floating py-3 col-12">
+                                    <InputSelect @bind-Value="userJob.JobId" class="form-select" id="JobId">
+                                        @foreach (Job job in jobs)
+                                        {
+                                            <option value="@job.Id">@job.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <label for="Event">Job</label>
+                                    <ValidationMessage For="@(() => userJob.JobId)" />
+                                </div>
+
+                                <div class="form-floating py-3 col-12">
+                                    <InputText @bind-Value="userJob.Description" class="form-control" id="Desciption" placeholder="Enter Description" />
+                                    <label for="Description">Description</label>
+                                    <ValidationMessage For="@(() => userJob.Description)" />
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-6 col-md-3">
+                                        <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                            <i class="bi bi-save"></i> Save
+                                        </button>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <a href="userjobs" class="btn btn-secondary form-control" disabled="@IsLoading">
+                                            <i class="bi bi-arrow-bar-left"></i> Cancel
+                                        </a>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </EditForm>
+
+                    </div>
                 </div>
-            </div>
+
+            }
+            else
+            {
+                <div class="card shadow border-0 mt-4">
+                    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <EditForm Model="userJob" FormName="JobUpsertAdminForm" OnValidSubmit="UpsertUserJob">
+                            <DataAnnotationsValidator />
+
+                            <div class="border p-3 mt-4">
+                                <div class="form-floating py-3 col-12">
+                                    <InputText @bind-Value="userJob.Event" class="form-control" id="Event" placeholder="Enter Event name" />
+                                    <label for="Event">Event</label>
+                                    <ValidationMessage For="@(() => userJob.Event)" />
+                                </div>
+
+                                <div class="form-floating py-3 col-12">
+                                    <InputSelect @bind-Value="userJob.JobId" class="form-select" id="JobId">
+                                        @foreach (Job job in jobs)
+                                        {
+                                            <option value="@job.Id">@job.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <label for="Event">Job</label>
+                                    <ValidationMessage For="@(() => userJob.JobId)" />
+                                </div>
+
+                                <div class="form-floating py-3 col-12">
+                                    <InputText @bind-Value="userJob.Description" class="form-control" id="Desciption" placeholder="Enter Description" />
+                                    <label for="Description">Description</label>
+                                    <ValidationMessage For="@(() => userJob.Description)" />
+                                </div>
+
+                                <AuthorizeView Roles="@(SD.Role_Moderator + "," + SD.Role_Admin)" Context="authState">
+                                    <div class="form-floating py-3 col-12">
+                                        <InputCheckbox @bind-Value="userJob.IsAccepted" class="form-check-label" id="IsAccepted" default="false" />
+                                        <label for="IsAccepted">Is Accepted</label>
+                                        <ValidationMessage For="@(() => userJob.IsAccepted)" />
+                                    </div>
+
+                                    <div class="form-floating py-3 col-12">
+                                        <InputSelect @bind-Value="userJob.UserId" class="form-select" id="UserId">
+                                            @foreach (ApplicationUser user in users)
+                                            {
+                                                <option value="@user.Id">@(user.FirstName) @(user.LastName)</option>
+                                            }
+                                        </InputSelect>
+                                        <label for="UserId">User</label>
+                                    </div>
+                                </AuthorizeView>
+
+                                <div class="row mt-3">
+                                    <div class="col-6 col-md-3">
+                                        <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                            <i class="bi bi-save"></i> Save
+                                        </button>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <a href="userjobs" class="btn btn-secondary form-control" disabled="@IsLoading">
+                                            <i class="bi bi-arrow-bar-left"></i> Cancel
+                                        </a>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </EditForm>
+
+                    </div>
+                </div>
+            }
+
         </Authorized>
+
         <NotAuthorized>
-            <p class="pt-4"><em>Unauthorized</em></p>
+            <p><em>Not authorized</em></p>
         </NotAuthorized>
+
     </AuthorizeView>
-    
+
 }
 
 @code {
+    private AuthenticationState? authContext => AuthenticationStateProvider.GetAuthenticationStateAsync().Result;
+    private ApplicationUser identityUser { get; set; }
+
+    public bool IsMember { get; set; } = true;
 
     [Parameter]
     public int Id { get; set; } = 0;
@@ -40,16 +181,23 @@ else
     public bool IsLoading { get; set; } = true;
 
     [SupplyParameterFromForm]
-    public UserJob UserJob { get; set; } = new UserJob();
+    public UserJob userJob { get; set; } = new UserJob();
 
-    private IEnumerable<Job> Jobs { get; set; } = new List<Job>();
+    private IEnumerable<Job> jobs { get; set; } = new List<Job>();
+    private IEnumerable<ApplicationUser> users { get; set; } = new List<ApplicationUser>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            var user = authContext.User;
+
+            var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
+            IsMember = authenticated && user.IsInRole(SD.Role_Member);
+
             await LoadUserJob();
             await LoadJobs();
+            await LoadUsers();
             IsLoading = false;
             StateHasChanged();
         }
@@ -57,28 +205,51 @@ else
 
     private async Task LoadJobs()
     {
-        Jobs = await _jobRepository.GetAllJobsAsync();
+        jobs = await _jobRepository.GetAllJobsAsync();
+    }
+
+    private async Task LoadUsers()
+    {
+        await Task.Run(() =>
+        {
+            users = UserManager.Users.ToList();
+        });
     }
 
     private async Task LoadUserJob()
     {
         if (Id != 0)
         {
-            UserJob = await _userJobRepository.GetUserJobByIdAsync(Id);
+            userJob = await _userJobRepository.GetUserJobByIdAsync(Id);
+        }
+        else 
+        {
+            // Setup the default user!
+            var user = authContext?.User;
+            identityUser = await UserManager.GetUserAsync(user);
+            userJob.UserId = identityUser?.Id;
         }
     }
 
     private async Task UpsertUserJob()
     {
         IsLoading = true;
+
+        if (userJob.UserId is null)
+        {
+            var user = authContext?.User;
+            var identityUser = await UserManager.GetUserAsync(user);
+            userJob.UserId = identityUser?.Id;
+        }
+
         if (Id == 0)
         {
-            await _userJobRepository.CreateUserJobAsync(UserJob);
+            await _userJobRepository.CreateUserJobAsync(userJob);
             await _js.ToastrSuccess("UserJob created successfully");
         }
         else
         {
-            await _userJobRepository.UpdateUserJobAsync(UserJob);
+            await _userJobRepository.UpdateUserJobAsync(userJob);
             await _js.ToastrSuccess("UserJob saved successfully");
         }
         IsLoading = false;

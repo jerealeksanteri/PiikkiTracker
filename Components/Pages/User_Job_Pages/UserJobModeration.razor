@@ -1,0 +1,28 @@
+﻿@page "/userjobs/moderation"
+@using PiikkiTracker.Utility
+@inject IJobRepository _jobRepository
+@inject IJSRuntime _js
+
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
+if (IsLoading) {
+<p><em>Loading...</em></p>
+}
+else {
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Completed Job Moderation</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@code {
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+
+    }
+}
