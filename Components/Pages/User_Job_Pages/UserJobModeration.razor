@@ -1,14 +1,17 @@
 ﻿@page "/userjobs/moderation"
 @using PiikkiTracker.Utility
-@inject IJobRepository _jobRepository
+@inject IUserJobRepository _userJobRepository
 @inject IJSRuntime _js
 
 <PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+<PiikkiTracker.Components.Shared.BsAcceptModal OnModalConfirmation="ConfirmAccept_Click"></PiikkiTracker.Components.Shared.BsAcceptModal>
 
-if (IsLoading) {
-<p><em>Loading...</em></p>
+@if (IsLoading) 
+{
+    <p><em>Loading...</em></p>
 }
-else {
+else 
+{
     <div class="card shadow border-0 mt-4">
         <div class="card-header bg-black bg-gradient m-lg-0 py-3">
             <div class="row">
@@ -17,12 +20,111 @@ else {
                 </div>
             </div>
         </div>
+
+        <AuthorizeView Roles="@($"{SD.Role_Admin},{SD.Role_Member}")">
+
+            <Authorized>
+
+                <div class="card-body p-4">
+                    <h4 class="text-center">Jobs Done List</h4>
+
+                    @if (userJobs.Any())
+                    {
+
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Job</th>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Payment</th>
+                                    <th>CreatedDate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(UserJob userJob in userJobs)
+                                {
+                                    <tr>
+                                        <td>@userJob.Event</td>
+                                        <td>@userJob.Job.Name</td>
+                                        <td>@userJob.User.FirstName @userJob.User.LastName</td>
+                                        <td>@userJob.User.Email</td>
+                                        <td>@userJob.Job.Payment</td>
+                                        <td>@userJob.CreatedDate</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" href="@($"userjobs/update/{userJob.Id}")">Edit</a>
+                                            <button type="button" class="btn btn-sm btn-success" @onclick="() => HandleAccept(userJob.Id)">
+                                                <i class="bi bi-check-lg"></i> Accept
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(userJob.Id)">
+                                                <i class="bi bi-trash-3"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No new Done Jobs waiting for moderation</p>
+                    }
+
+                </div>
+            </Authorized>
+
+            <NotAuthorized>
+                <p class="m-5"><em>You are not authorized to view this page</em></p>
+            </NotAuthorized>
+
+        </AuthorizeView>
+
     </div>
+}
 
 @code {
+    public bool IsLoading { get; set; } = true;
+    public int UserJobID { get; set; } = 0;
+
+    public IEnumerable<UserJob> userJobs { get; set; } = new List<UserJob>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUserJobs();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUserJobs()
+    {
+        userJobs = await _userJobRepository.GetAllUnacceptedUserJobsAsync();
+    }
 
     private async Task ConfirmDelete_Click(bool isConfirmed)
     {
 
+    }
+
+    private async Task ConfirmAccept_Click(bool isConfirmed)
+    {
+
+    }
+
+    private void HandleDelete(int id)
+    {
+        UserJobID = id;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private void HandleAccept(int id)
+    {
+        UserJobID = id;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowAcceptModal");
     }
 }

@@ -9,5 +9,7 @@ namespace PiikkiTracker.Repository.IRepository
         Task<UserJob> CreateUserJobAsync(UserJob userJob);
         Task<UserJob> UpdateUserJobAsync(UserJob userJob);
         Task<bool> DeleteUserJobAsync(int userJobId);
+        Task<IEnumerable<UserJob>> GetAllUnacceptedUserJobsAsync();
+        Task<IEnumerable<UserJob>> GetAllUserJobsByUserIdAsync(string userId);
     }
 }

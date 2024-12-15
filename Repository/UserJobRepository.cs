@@ -33,12 +33,19 @@ namespace PiikkiTracker.Repository
 
         public async Task<IEnumerable<UserJob>> GetAllUserJobsAsync()
         {
-            return await _db.UserJobs.ToListAsync();
+            return await _db.UserJobs
+                .Include(uj => uj.Job)
+                .Include(uj => uj.User)
+                .ToListAsync();
         }
 
         public async Task<UserJob> GetUserJobByIdAsync(int userJobId)
         {
-            var obj = _db.UserJobs.FirstOrDefaultAsync(u => u.Id == userJobId);
+            var obj = _db.UserJobs
+                .Include(uj => uj.Job)
+                .Include(uj => uj.User)
+                .FirstOrDefaultAsync(u => u.Id == userJobId);
+
             if (await obj == null)
             {
                 return new UserJob();
@@ -48,7 +55,7 @@ namespace PiikkiTracker.Repository
 
         public async Task<UserJob> UpdateUserJobAsync(UserJob userJob)
         {
-            var obj = await _db.UserJobs.FirstOrDefaultAsync(u => u.Id == userJob.Id);
+            var obj = await _db.UserJobs.Include(uj => uj.Job).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userJob.Id);
             if (obj != null)
             {
                 obj.UserId = userJob.UserId;
@@ -60,6 +67,16 @@ namespace PiikkiTracker.Repository
                 await _db.SaveChangesAsync();
             }
             return obj;
+        }
+
+        public async Task<IEnumerable<UserJob>> GetAllUnacceptedUserJobsAsync()
+        {
+            return await _db.UserJobs.Include(uj => uj.Job).Include(uj => uj.User).Where(u => u.IsAccepted == false).ToListAsync();
+        }
+
+        public async Task<IEnumerable<UserJob>> GetAllUserJobsByUserIdAsync(string userId)
+        {
+            return await _db.UserJobs.Include(uj => uj.Job).Include(uj => uj.User).Where(u => u.UserId == userId).ToListAsync();
         }
 
 
