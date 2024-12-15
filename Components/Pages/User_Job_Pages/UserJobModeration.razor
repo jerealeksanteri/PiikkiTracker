@@ -12,16 +12,17 @@
 }
 else 
 {
+
     <div class="card shadow border-0 mt-4">
         <div class="card-header bg-black bg-gradient m-lg-0 py-3">
             <div class="row">
                 <div class="col-12 text-center">
-                    <h2 class="text-white py-2">Completed Job Moderation</h2>
+                    <h2 class="text-white py-2">Job Moderation</h2>
                 </div>
             </div>
         </div>
 
-        <AuthorizeView Roles="@($"{SD.Role_Admin},{SD.Role_Member}")">
+        <AuthorizeView Roles="@($"{SD.Role_Admin},{SD.Role_Moderator}")">
 
             <Authorized>
 
@@ -32,14 +33,16 @@ else
                     {
 
                         <table class="table table-bordered table-striped table-hover">
+
                             <thead>
                                 <tr>
                                     <th>Event</th>
                                     <th>Job</th>
+                                    <th>Description</th>
                                     <th>User</th>
-                                    <th>Email</th>
                                     <th>Payment</th>
                                     <th>CreatedDate</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,8 +51,8 @@ else
                                     <tr>
                                         <td>@userJob.Event</td>
                                         <td>@userJob.Job.Name</td>
+                                        <td>@userJob.Description</td>
                                         <td>@userJob.User.FirstName @userJob.User.LastName</td>
-                                        <td>@userJob.User.Email</td>
                                         <td>@userJob.Job.Payment</td>
                                         <td>@userJob.CreatedDate</td>
                                         <td>
@@ -97,21 +100,62 @@ else
             IsLoading = false;
             StateHasChanged();
         }
+
     }
 
     private async Task LoadUserJobs()
     {
         userJobs = await _userJobRepository.GetAllUnacceptedUserJobsAsync();
+
+
+        foreach (UserJob userJob in userJobs)
+        {
+            Console.WriteLine(userJob.Id);
+        }
     }
 
     private async Task ConfirmDelete_Click(bool isConfirmed)
     {
+        IsLoading = true;
 
+        if (isConfirmed && UserJobID != 0)
+        {
+            var result = await _userJobRepository.DeleteUserJobAsync(UserJobID);
+            if (result)
+            {
+                _js?.ToastrSuccess("Users Job Deleted Successfully");
+            }
+            else
+            {
+                _js?.ToastrError("There was an error while deleting");
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadUserJobs();
+
+        }
+
+        UserJobID = 0;
+        IsLoading = false;
     }
 
     private async Task ConfirmAccept_Click(bool isConfirmed)
     {
+        IsLoading = true;
 
+        if (isConfirmed){
+            UserJob userJob = await _userJobRepository.GetUserJobByIdAsync(UserJobID);
+            userJob.IsAccepted = true;
+
+            _ = await _userJobRepository.UpdateUserJobAsync(userJob);
+            _js?.ToastrSuccess("Done Job Accepted Successfully");
+
+            _js?.InvokeVoidAsync("HideAcceptModal");
+        }
+
+        await LoadUserJobs();
+
+        IsLoading = false;
     }
 
     private void HandleDelete(int id)

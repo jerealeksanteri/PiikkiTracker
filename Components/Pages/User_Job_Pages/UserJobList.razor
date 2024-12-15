@@ -1,0 +1,166 @@
+﻿@page "/userjobs"
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserJobRepository _userJobRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+
+@if(IsLoading)
+{
+    <p>Loading...</p>
+}
+else 
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Completed Jobs</h2>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authContext">
+            <Authorized>
+
+                <div class="card-body p-4">
+                    <h4 class="text-center">Waiting for Approval</h4>
+                    @if (waitingJobs.Any())
+                    {
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Job</th>
+                                    <th>Description</th>
+                                    <th>User</th>
+                                    <th>Payment</th>
+                                    <th>CreatedDate</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var job in waitingJobs)
+                                {
+                                    <tr>
+                                        <td>@job.Event</td>
+                                        <td>@job.Job.Name</td>
+                                        <td>@job.Description</td>
+                                        <td>@job.User.FirstName @job.User.LastName</td>
+                                        <td>@job.Job.Payment</td>
+                                        <td>@job.CreatedDate</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" href="@($"userjobs/update/{job.Id}")">Edit</a>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(job.Id)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No Jobs found</p>
+                    }
+                </div>
+
+                <div class="card-body p-4">
+                    <h4 class="text-center">Completed Jobs</h4>
+                    @if (completedJobs.Any())
+                    {
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Job</th>
+                                    <th>Description</th>
+                                    <th>User</th>
+                                    <th>Payment</th>
+                                    <th>CreatedDate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var job in completedJobs)
+                                {
+                                    <tr>
+                                        <td>@job.Event</td>
+                                        <td>@job.Job.Name</td>
+                                        <td>@job.Description</td>
+                                        <td>@job.User.FirstName @job.User.LastName</td>
+                                        <td>@job.Job.Payment</td>
+                                        <td>@job.CreatedDate</td>
+                                        <AuthorizeView Roles="@SD.Role_Admin">
+                                            <a class="btn btn-sm btn-primary" href="@($"jobs/update/{job.Id}")">Edit</a>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(job.Id)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </AuthorizeView>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No Jobs found</p>
+                    }
+                </div>
+
+            </Authorized>
+
+            <NotAuthorized>
+                <p><em>Not authorized</em></p>
+            </NotAuthorized>
+
+        </AuthorizeView>
+
+    </div>
+
+}
+
+@code {
+    public bool IsLoading { get; set; } = true;
+    private int UserJobID { get; set; } = 0;
+
+    public IEnumerable<UserJob> waitingJobs = new List<UserJob>();
+    public IEnumerable<UserJob> completedJobs = new List<UserJob>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUserJobs();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUserJobs()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState?.User;
+
+        if (user is not null && user.Identity.IsAuthenticated)
+        {
+            var identityUser = await UserManager.GetUserAsync(user);
+            IEnumerable<UserJob> userJobs = await _userJobRepository.GetAllUserJobsByUserIdAsync(identityUser.Id);
+
+            waitingJobs = userJobs.Where(item => item.IsAccepted == false);
+            completedJobs = userJobs.Where(item => item.IsAccepted == true);
+        }
+        
+    }
+
+    private void HandleDelete(int id)
+    {
+        UserJobID = id;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+}

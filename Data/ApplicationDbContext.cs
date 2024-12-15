@@ -24,7 +24,11 @@ namespace PiikkiTracker.Data
 
 
             modelBuilder.Entity<UserJob>()
-                .HasKey(uj => new { uj.UserId, uj.JobId });
+                .HasKey(uj => uj.Id);
+
+            modelBuilder.Entity<UserProduct>()
+                .HasKey(up => up.Id);
+
 
             modelBuilder.Entity<UserJob>()
                 .HasOne(uj => uj.User)
@@ -36,8 +40,6 @@ namespace PiikkiTracker.Data
                 .WithMany(j => j.UserJobs)
                 .HasForeignKey(uj => uj.JobId);
 
-            modelBuilder.Entity<UserProduct>()
-                .HasKey(up => new { up.UserId, up.ProductId });
 
             modelBuilder.Entity<UserProduct>()
                 .HasOne(up => up.User)
@@ -48,6 +50,9 @@ namespace PiikkiTracker.Data
                 .HasOne(up => up.Product)
                 .WithMany(p => p.UserProducts)
                 .HasForeignKey(up => up.ProductId);
+
+
+
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

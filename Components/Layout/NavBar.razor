@@ -1,5 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
 @inject AuthenticationStateProvider AuthenticationStateProvider
+
 
 <nav class="navbar navbar-expand-md navbar-dark bg-dark pb-2 pt-2">
 	<div class="container-fluid">
@@ -13,7 +15,7 @@
 		</button>
 		<div class="collapse navbar-collapse" id="navbarCollapse" >
 			<ul class="navbar-nav me-auto mb-2 mb-md-0">
-				<AuthorizeView>
+				<AuthorizeView Context="authContext">
 					<li class="nav-item">
 						<NavLink class="nav-link" href="jobs" >
 							<i class="bi bi-briefcase" aria-hidden="true"></i> Jobs
@@ -22,6 +24,23 @@
 					<li class="nav-item">
 						<NavLink class="nav-link" href="products">
 							<i class="bi bi-cup-straw" aria-hidden="true"></i> Products
+						</NavLink>
+					</li>
+
+					<li class="nav-item">
+						<NavLink class="nav-link" href="userjobs">
+							<i class="bi bi-card-checklist" aria-hidden="true"></i> Jobs Done
+						</NavLink>
+					</li>
+
+				</AuthorizeView>
+				
+				<AuthorizeView Context="authContext" Roles="@SD.Role_Moderator">
+					
+
+					<li class="nav-item">
+						<NavLink class="nav-link" href="userjobs/moderation">
+							<i class="bi bi-activity" aria-hidden="true"></i> Job Moderation
 						</NavLink>
 					</li>
 				</AuthorizeView>
@@ -46,6 +65,7 @@
 							</form>
 						</li>
 					</Authorized>
+
 
 					<NotAuthorized>
 						<li class="nav-item">

@@ -6,6 +6,7 @@ using PiikkiTracker.Components.Account;
 using PiikkiTracker.Data;
 using PiikkiTracker.Repository;
 using PiikkiTracker.Repository.IRepository;
+using PiikkiTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
