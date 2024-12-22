@@ -6,6 +6,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime _js
 
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
 
 @if(IsLoading)
 {
@@ -161,6 +163,31 @@ else
         UserJobID = id;
         // Show the modal
         _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+
+        if (isConfirmed && UserJobID != 0)
+        {
+            var result = await _userJobRepository.DeleteUserJobAsync(UserJobID);
+            if (result)
+            {
+                _js?.ToastrSuccess("UserJob Deleted Successfully");
+            }
+            else
+            {
+                _js?.ToastrError("There was an error while deleting");
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadUserJobs();
+
+        }
+
+        UserJobID = 0;
+        IsLoading = false;
     }
 
 }

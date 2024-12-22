@@ -1,11 +1,13 @@
-﻿@page "/userjobs/create"
-@page "/userjobs/update/{Id:int}"
-@inject IUserJobRepository _userJobRepository
-@inject IJobRepository _jobRepository
+﻿@page "/userproducts/create"
+@page "/userproducts/update/{id:int}"
+
+@inject IUserProductRepository _userProductRepository
+@inject IProductRepository _productRepository
 @inject NavigationManager _navigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime _js
+
 
 @if (IsLoading)
 {
@@ -28,36 +30,36 @@ else
 
                     <div class="card-body p-4">
 
-                        <EditForm Model="userJob" FormName="JobUpsertMemberForm" OnValidSubmit="UpsertUserJob">
+                        <EditForm Model="userProduct" FormName="UserProductUpsertMemberForm" OnValidSubmit="UpsertUserProduct">
                             <DataAnnotationsValidator />
+                            
                             <div>
                                 <ValidationSummary />
                             </div>
 
+                            
                             <div class="border p-3 mt-4">
-                                <div class="form-floating py-3 col-12">
-                                    <InputText @bind-Value="userJob.Event" class="form-control" id="Event" placeholder="Enter Event name" />
-                                    <label for="Event">Event</label>
-                                    <ValidationMessage For="@(() => userJob.Event)" />
-                                </div>
 
+                                <!-- Product -->
                                 <div class="form-floating py-3 col-12">
-                                    <InputSelect @bind-Value="userJob.JobId" class="form-select" id="JobId">
-                                        @foreach (Job job in jobs)
+                                    <InputSelect @bind-Value="userProduct.ProductId" class="form-select" id="ProductId">
+                                        @foreach (Product product in products)
                                         {
-                                            <option value="@job.Id">@job.Name</option>
+                                            <option value="@product.Id">@product.Name</option>
                                         }
                                     </InputSelect>
-                                    <label for="Job">Job</label>
-                                    <ValidationMessage For="@(() => userJob.JobId)" />
+                                    <label for="Product">Product</label>
+                                    <ValidationMessage For="@(() => userProduct.ProductId)" />
                                 </div>
 
+                                <!-- Amount -->
                                 <div class="form-floating py-3 col-12">
-                                    <InputText @bind-Value="userJob.Description" class="form-control" id="Desciption" placeholder="Enter Description" />
-                                    <label for="Description">Description</label>
-                                    <ValidationMessage For="@(() => userJob.Description)" />
+                                    <InputNumber @bind-Value="userProduct.Amount" class="form-control" id="Amount" />
+                                    <label for="Amount">Amount</label>
+                                    <ValidationMessage For="@(() => userProduct.Amount)"/>
                                 </div>
 
+                                <!-- Buttons -->
                                 <div class="row mt-3">
                                     <div class="col-6 col-md-3">
                                         <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
@@ -72,13 +74,14 @@ else
                                 </div>
 
                             </div>
+
+
                         </EditForm>
 
                     </div>
                 </div>
-
             }
-            else
+            else 
             {
                 <div class="card shadow border-0 mt-4">
                     <div class="card-header bg-black bg-gradient m-lg-0 py-3">
@@ -91,51 +94,48 @@ else
 
                     <div class="card-body p-4">
 
-                        <EditForm Model="userJob" FormName="JobUpsertAdminForm" OnValidSubmit="UpsertUserJob">
+                        <EditForm Model="userProduct" FormName="UserProductUpsertMemberForm" OnValidSubmit="UpsertUserProduct">
                             <DataAnnotationsValidator />
 
-                            <div class="border p-3 mt-4">
-                                <div class="form-floating py-3 col-12">
-                                    <InputText @bind-Value="userJob.Event" class="form-control" id="Event" placeholder="Enter Event name" />
-                                    <label for="Event">Event</label>
-                                    <ValidationMessage For="@(() => userJob.Event)" />
-                                </div>
+                            <div>
+                                <ValidationSummary />
+                            </div>
 
+
+                            <div class="border p-3 mt-4">
+
+                                <!-- Product -->
                                 <div class="form-floating py-3 col-12">
-                                    <InputSelect @bind-Value="userJob.JobId" class="form-select" id="JobId">
-                                        @foreach (Job job in jobs)
+                                    <InputSelect @bind-Value="userProduct.ProductId" class="form-select" id="ProductId">
+                                        @foreach (Product product in products)
                                         {
-                                            <option value="@job.Id">@job.Name</option>
+                                            <option value="@product.Id">@product.Name</option>
                                         }
                                     </InputSelect>
-                                    <label for="Event">Job</label>
-                                    <ValidationMessage For="@(() => userJob.JobId)" />
+                                    <label for="Product">Product</label>
+                                    <ValidationMessage For="@(() => userProduct.ProductId)" />
                                 </div>
 
+                                <!-- Amount -->
                                 <div class="form-floating py-3 col-12">
-                                    <InputText @bind-Value="userJob.Description" class="form-control" id="Desciption" placeholder="Enter Description" />
-                                    <label for="Description">Description</label>
-                                    <ValidationMessage For="@(() => userJob.Description)" />
+                                    <InputNumber @bind-Value="userProduct.Amount" class="form-control" id="Amount" />
+                                    <label for="Amount">Amount</label>
+                                    <ValidationMessage For="@(() => userProduct.Amount)" />
                                 </div>
 
-                                <AuthorizeView Roles="@(SD.Role_Moderator + "," + SD.Role_Admin)" Context="authState">
-                                    <div class="form-floating py-3 col-12">
-                                        <InputCheckbox @bind-Value="userJob.IsAccepted" class="form-check-label" id="IsAccepted" default="false" />
-                                        <label for="IsAccepted">Is Accepted</label>
-                                        <ValidationMessage For="@(() => userJob.IsAccepted)" />
-                                    </div>
+                                <!-- User -->
+                                <div class="form-floating py-3 col-12">
+                                    <InputSelect @bind-Value="userProduct.UserId" class="form-select" id="UserId">
+                                        @foreach (ApplicationUser user in users)
+                                        {
+                                            <option value="@user.Id">@user.FirstName @user.LastName</option>
+                                        }
+                                    </InputSelect>
+                                    <label for="User">User</label>
+                                    <ValidationMessage For="@(() => userProduct.UserId)" />
+                                </div>
 
-                                    <div class="form-floating py-3 col-12">
-                                        <InputSelect @bind-Value="userJob.UserId" class="form-select" id="UserId">
-                                            @foreach (ApplicationUser user in users)
-                                            {
-                                                <option value="@user.Id">@(user.FirstName) @(user.LastName)</option>
-                                            }
-                                        </InputSelect>
-                                        <label for="UserId">User</label>
-                                    </div>
-                                </AuthorizeView>
-
+                                <!-- Buttons -->
                                 <div class="row mt-3">
                                     <div class="col-6 col-md-3">
                                         <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
@@ -143,28 +143,24 @@ else
                                         </button>
                                     </div>
                                     <div class="col-6 col-md-3">
-                                        <a href="userjobs" class="btn btn-secondary form-control" type="reset" disabled="@IsLoading">
+                                        <a href="userjobs" class="btn btn-secondary form-control" disabled="@IsLoading">
                                             <i class="bi bi-arrow-bar-left"></i> Cancel
                                         </a>
                                     </div>
                                 </div>
 
                             </div>
+
+
                         </EditForm>
 
                     </div>
                 </div>
             }
-
         </Authorized>
-
-        <NotAuthorized>
-            <p><em>Not authorized</em></p>
-        </NotAuthorized>
-
     </AuthorizeView>
-
 }
+
 
 @code {
     private AuthenticationState? authContext => AuthenticationStateProvider.GetAuthenticationStateAsync().Result;
@@ -178,31 +174,34 @@ else
     public bool IsLoading { get; set; } = true;
 
     [SupplyParameterFromForm]
-    public UserJob userJob { get; set; } = new UserJob();
+    public UserProduct userProduct { get; set; } = new UserProduct();
 
-    private IEnumerable<Job> jobs { get; set; } = new List<Job>();
-    private IEnumerable<ApplicationUser> users { get; set; } = new List<ApplicationUser>();
+    public IEnumerable<Product> products { get; set; } = new List<Product>();
+    public IEnumerable<ApplicationUser> users { get; set; } = new List<ApplicationUser>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
         if (firstRender)
         {
             var user = authContext.User;
-
             var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
+
             IsMember = authenticated && user.IsInRole(SD.Role_Member);
 
-            await LoadUserJob();
-            await LoadJobs();
+
+            await LoadUserProduct();
+            await LoadProducts();
             await LoadUsers();
+
             IsLoading = false;
             StateHasChanged();
         }
     }
 
-    private async Task LoadJobs()
+    private async Task LoadProducts() 
     {
-        jobs = await _jobRepository.GetAllJobsAsync();
+        products = await _productRepository.GetAllProductsAsync();
     }
 
     private async Task LoadUsers()
@@ -213,46 +212,47 @@ else
         });
     }
 
-    private async Task LoadUserJob()
+    private async Task LoadUserProduct()
     {
-        if (Id != 0)
+        if ( Id != 0 ) 
         {
-            userJob = await _userJobRepository.GetUserJobByIdAsync(Id);
+            userProduct = await _userProductRepository.GetUserProductByIdAsync(Id);
         }
         else 
         {
-            // Setup the default user!
+            // Setup the default user for member inputs!!
             var user = authContext?.User;
             identityUser = await UserManager.GetUserAsync(user);
-            userJob.UserId = identityUser?.Id;
+            userProduct.UserId = identityUser?.Id;
         }
     }
 
-    private async Task UpsertUserJob()
+    private async Task UpsertUserProduct()
     {
         IsLoading = true;
 
-        if (userJob.UserId is null)
+        if (userProduct.UserId is null)
         {
             var user = authContext?.User;
             var identityUser = await UserManager.GetUserAsync(user);
-            userJob.UserId = identityUser?.Id;
+            userProduct.UserId = identityUser?.Id;
         }
 
         if (Id == 0)
         {
-            await _userJobRepository.CreateUserJobAsync(userJob);
-            await _js.ToastrSuccess("UserJob created successfully");
+            await _userProductRepository.CreateUserProductAsync(userProduct);
+            await _js.ToastrSuccess("UserProduct created successfully!");
+
         }
         else
         {
-            await _userJobRepository.UpdateUserJobAsync(userJob);
-            await _js.ToastrSuccess("UserJob saved successfully");
+            await _userProductRepository.UpdateUserProductAsync(userProduct);
+            await _js.ToastrSuccess("UserProduct saved successfully!");
         }
+
         IsLoading = false;
 
-        _navigationManager.NavigateTo("userjobs");
+        _navigationManager.NavigateTo("userproducts");
     }
-
 
 }

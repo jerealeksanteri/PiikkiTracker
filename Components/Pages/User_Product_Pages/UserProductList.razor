@@ -1,0 +1,141 @@
+﻿@page "/userproducts"
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserProductRepository _userProductRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
+@if(IsLoading)
+{
+    <p>Loading...</p>
+}
+else 
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Tab Log</h2>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authContext">
+            <Authorized>
+                
+                <div class="card-body p-4">
+
+                    @if(userProducts.Any())
+                    {
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Amount</th>
+                                    <th>User</th>
+                                    <th>Price (1pcs)</th>
+                                    <th>CreatedDate</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach ( UserProduct up in userProducts)
+                                {
+                                    <tr>
+                                        <td>@up.Product.Name</td>
+                                        <td>@up.Amount</td>
+                                        <td>@up.User.FirstName @up.User.LastName</td>
+                                        <td>@up.Product.Price</td>
+                                        <td>@up.CreatedDate</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(up.Id)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No UserProducts found</p>
+                    }
+                </div>
+            </Authorized>
+
+            <NotAuthorized>
+                <p><em>Not authorized</em></p>
+            </NotAuthorized>
+
+         </AuthorizeView>
+    </div>
+}
+
+@code {
+    public bool IsLoading { get; set; } = true;
+    private int UserProductID { get; set; } = 0;
+
+    public IEnumerable<UserProduct> userProducts = new List<UserProduct>();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUserProducts();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task LoadUserProducts(){
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState?.User;
+
+        if(user is not null && user.Identity.IsAuthenticated)
+        {
+            var identityUser = await UserManager.GetUserAsync(user);
+            userProducts = await _userProductRepository.GetAllUserProductsByUserIdAsync(identityUser.Id);
+        }
+
+    }
+
+    private void HandleDelete(int id)
+    {
+        UserProductID = id;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+
+        if (isConfirmed && UserProductID != 0)
+        {
+            var result = await _userProductRepository.DeleteUserProductAsync(UserProductID);
+            if (result)
+            {
+                _js?.ToastrSuccess("UserProduct Deleted Successfully");
+            }
+            else
+            {
+                _js?.ToastrError("There was an error while deleting");
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadUserProducts();
+
+        }
+
+        UserProductID = 0;
+        IsLoading = false;
+    }
+}

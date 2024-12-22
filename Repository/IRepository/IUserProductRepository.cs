@@ -9,5 +9,6 @@ namespace PiikkiTracker.Repository.IRepository
         Task<UserProduct> CreateUserProductAsync(UserProduct userProduct);
         Task<UserProduct> UpdateUserProductAsync(UserProduct userProduct);
         Task<bool> DeleteUserProductAsync(int userProductId);
+        Task<IEnumerable<UserProduct>> GetAllUserProductsByUserIdAsync(string userId);
     }
 }

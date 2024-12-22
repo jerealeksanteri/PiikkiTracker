@@ -19,7 +19,7 @@ namespace PiikkiTracker.Repository
         }
         public async Task<bool> DeleteUserProductAsync(int userProductId)
         {
-            var obj = _db.UserProducts.FirstOrDefaultAsync(u => u.Id == userProductId);
+            var obj = _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProductId);
             if (await obj != null)
             {
                 _db.UserProducts.Remove(await obj);
@@ -29,11 +29,11 @@ namespace PiikkiTracker.Repository
         }
         public async Task<IEnumerable<UserProduct>> GetAllUserProductsAsync()
         {
-            return await _db.UserProducts.ToListAsync();
+            return await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).ToListAsync();
         }
         public async Task<UserProduct> GetUserProductByIdAsync(int userProductId)
         {
-            var obj = _db.UserProducts.FirstOrDefaultAsync(u => u.Id == userProductId);
+            var obj = _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProductId);
             if (await obj == null)
             {
                 return new UserProduct();
@@ -42,7 +42,7 @@ namespace PiikkiTracker.Repository
         }
         public async Task<UserProduct> UpdateUserProductAsync(UserProduct userProduct)
         {
-            var obj = await _db.UserProducts.FirstOrDefaultAsync(u => u.Id == userProduct.Id);
+            var obj = await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProduct.Id);
             if (obj != null)
             {
                 obj.UserId = userProduct.UserId;
@@ -53,6 +53,12 @@ namespace PiikkiTracker.Repository
                 await _db.SaveChangesAsync();
             }
             return obj;
+        }
+
+
+        public async Task<IEnumerable<UserProduct>> GetAllUserProductsByUserIdAsync(string userId)
+        {
+            return await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).Where(uj => uj.UserId == userId).ToListAsync();
         }
     }
 }

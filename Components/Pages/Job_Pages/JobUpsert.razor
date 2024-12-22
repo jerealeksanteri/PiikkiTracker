@@ -67,9 +67,9 @@ else
         </div>
     </AuthorizeView>
 
-    <AuthorizedView Roles="@SD.Role_Member" Context="authContext">
+    <AuthorizeView Roles="@SD.Role_Member" Context="authContext">
                 <p><em>Not an admin</em></p>
-    </AuthorizedView>
+    </AuthorizeView>
 
     <NotAuthorized Context="authContext">
                 <p>You are not authorized to view this page.</p>
