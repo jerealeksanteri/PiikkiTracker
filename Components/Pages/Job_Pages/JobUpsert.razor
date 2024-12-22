@@ -71,9 +71,11 @@ else
                 <p><em>Not an admin</em></p>
     </AuthorizeView>
 
-    <NotAuthorized Context="authContext">
-                <p>You are not authorized to view this page.</p>
-    </NotAuthorized>
+    <AuthorizeView>
+        <NotAuthorized Context="authContext">
+            <p><em>Not authorized to view this page</em></p>
+        </NotAuthorized>
+    </AuthorizeView>
 }
 
 

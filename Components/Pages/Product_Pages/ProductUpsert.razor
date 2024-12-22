@@ -62,13 +62,16 @@ else
         </div>
     </AuthorizeView>
 
-    <AuthorizedView Roles="@SD.Role_Member" Context="authContext">
+    <AuthorizeView Roles="@SD.Role_Member" Context="authContext">
                 <p><em>Not an admin</em></p>
-    </AuthorizedView>
+    </AuthorizeView>
 
-    <NotAuthorized Context="authContext">
-                <p><em>Not authorized to view this page</em></p>
-    </NotAuthorized>
+    <AuthorizeView>
+        <NotAuthorized Context="authContext">
+            <p><em>Not authorized to view this page</em></p>
+        </NotAuthorized>
+    </AuthorizeView>
+    
 }
 @code {
     [Parameter]
