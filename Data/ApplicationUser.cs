@@ -14,6 +14,8 @@ namespace PiikkiTracker.Data
 
         public ICollection<UserJob> UserJobs { get; set; } = new List<UserJob>();
         public ICollection<UserProduct> UserProducts { get; set; } = new List<UserProduct>();
+        public ICollection<Tab> Tabs { get; set; } = new List<Tab>();
+        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 
 }

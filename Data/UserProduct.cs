@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations;
 
 namespace PiikkiTracker.Data
 {
@@ -15,6 +16,11 @@ namespace PiikkiTracker.Data
 
         [Required(ErrorMessage = "Amount Is Required")]
         public int Amount { get; set; }
+
+
+        public int? TabId { get; set; } = null;
+        public Tab Tab { get; set; }
+        public DateTime? TabAddedDate { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public ApplicationUser User { get; set; }
