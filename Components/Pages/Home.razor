@@ -4,29 +4,53 @@
 
 
 <div class="card shadow border-0 mt-4">
-    <div class="card-body p-4">
-        <div class="card-title text-center display-6">
-            Welcome to TabTracker!
+    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2 class="text-white py-2">Welcome to TabTracker!</h2>
+            </div>
         </div>
-        
+    </div>
+    <div class="row">
+
         <AuthorizeView>
             <Authorized>
+                <div class="col-md-6">
+                    <div class="card m-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Actions</h5>
+                            <div class="card-text mb-4">
+                                <a href="userjobs/create" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus-square"></i> Log a new Job done
+                                </a>
+                            </div>
 
-                <div class="mb-3 col-1 text-start">
-                    <a href="userjobs/create" class="btn btn-sm btn-primary" style="width:250px">
-                        <i class="bi bi-plus-square"></i> Log a new Job done
-                    </a>
+                            <div class="card-text mb-4">
+                                <a href="userproducts/create" class="btn btn-sm btn-success">
+                                    <i class="bi bi-plus-square"></i> Log a new Product in Tab
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
-
-                <div class="mb-3 col-1 text-start">
-                    <a href="userproducts/create" class="btn btn-sm btn-success" style="width:250px">
-                        <i class="bi bi-plus-square"></i> Log a new Product in Tab
-                    </a>
+                
+                <div class="col-md-6">
+                    <div class="card m-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Tab</h5>
+                            <div class="card-text mb-4">
+                                
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
             </Authorized>
             <NotAuthorized>
-                <p class="pt-4"><em>Continue to sign in!</em></p>
+                <div class="card-body">
+                    <p class="p-4"><em>Continue to sign in!</em></p>
+                </div>
 
             </NotAuthorized>
         </AuthorizeView>

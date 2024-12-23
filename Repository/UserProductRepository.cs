@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PiikkiTracker.Data;
 using PiikkiTracker.Repository.IRepository;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace PiikkiTracker.Repository
 {
@@ -59,6 +60,45 @@ namespace PiikkiTracker.Repository
         public async Task<IEnumerable<UserProduct>> GetAllUserProductsByUserIdAsync(string userId)
         {
             return await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).Where(uj => uj.UserId == userId).ToListAsync();
+        }
+
+        public async Task<IEnumerable<UserProduct>> SearchUserProductsDynamically(string searchTerm)
+        {
+            searchTerm = searchTerm.ToLower();
+            string[] terms = searchTerm?.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            IQueryable<UserProduct> query = _db.UserProducts
+                .Include(up => up.User)
+                .Include(up => up.Product); 
+
+            foreach (string term in terms)
+            {
+                // Check if the keyword is numeric (e.g., for Amount)
+                if (int.TryParse(term, out int numericKeyword))
+                {
+                    query = query.Where(up => up.Amount == numericKeyword);
+                }
+                // Check if the keyword is a valid DateTime
+                else if (DateTime.TryParse(term, out DateTime dateKeyword))
+                {
+                    query = query.Where(up => up.CreatedDate.Date == dateKeyword.Date); // Match dates exactly
+                }
+                else
+                {
+                    query = query.Where(up =>
+                        (up.User.FirstName ?? "").ToLower().Contains(term) ||    // Match user first name
+                        (up.User.LastName ?? "").ToLower().Contains(term) ||     // Match user last name
+                        (up.Product.Name ?? "").ToLower().Contains(term)         // Match product name
+                    );
+                }
+
+            }
+            
+
+            var results = await query.ToListAsync();
+            Console.WriteLine($"Search Term: {searchTerm}, Results Count: {results.Count()}");
+
+            return results;
         }
     }
 }

@@ -14,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Logging.AddConsole();
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
