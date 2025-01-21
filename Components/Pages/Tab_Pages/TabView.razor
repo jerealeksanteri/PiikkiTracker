@@ -1,0 +1,44 @@
+@page "/tab"
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserProductRepository _userProductRepository
+@inject IUserJobRepository _userJobRepository
+@inject ITransactionRepository _transactionRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Tab Administration</h2>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authContext" Roles="@SD.Role_Admin">
+            <Authorized>
+                <div class="card-body p-4">
+
+                </div>
+                
+            </Authorized>
+
+            <NotAuthorized>
+                <p><em>Not authorized</em></p>
+            </NotAuthorized>
+
+        </AuthorizeView>
+    </div>
+}
+
+@code {
+    public bool IsLoading { get; set; } = true;
+}
