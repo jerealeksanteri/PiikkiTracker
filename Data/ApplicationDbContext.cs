@@ -10,7 +10,6 @@ namespace PiikkiTracker.Data
         public DbSet<Job> Jobs { get; set; }
         public DbSet<UserJob> UserJobs { get; set; }
         public DbSet<UserProduct> UserProducts { get; set; }
-        public DbSet<Tab> Tab { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,30 +51,6 @@ namespace PiikkiTracker.Data
                 .WithMany(p => p.UserProducts)
                 .HasForeignKey(up => up.ProductId);
 
-            modelBuilder.Entity<UserProduct>()
-                .HasOne(up => up.Tab)
-                .WithMany(t => t.UserProducts)
-                .HasForeignKey(t => t.TabId)
-                .IsRequired(false);
-
-            modelBuilder.Entity<Tab>()
-                .HasKey(t => t.Id);
-
-            modelBuilder.Entity<Tab>()
-                .Property(t => t.TabTotal)
-                .HasPrecision(18, 2)
-                .HasDefaultValue(0);
-
-            modelBuilder.Entity<Tab>()
-                .HasOne(t => t.User)
-                .WithMany(ap => ap.Tabs)
-                .HasForeignKey(t => t.UserId);
-
-            modelBuilder.Entity<Tab>()
-                .HasOne(tab => tab.Transaction)
-                .WithMany(tr => tr.ClosedTabs)
-                .HasForeignKey(tab => tab.TransactionId)
-                .IsRequired(false);
 
             modelBuilder.Entity<Transaction>()
                 .HasOne(tr => tr.User)
@@ -83,21 +58,9 @@ namespace PiikkiTracker.Data
                 .HasForeignKey(tr => tr.UserId)
                 .IsRequired(true);
 
-            modelBuilder.Entity<UserJob>()
-                .HasOne(uj => uj.Transaction)
-                .WithMany(tr => tr.UserJobs)
-                .HasForeignKey(uj => uj.TransactionId)
-                .IsRequired(false);
-
             modelBuilder.Entity<Transaction>()
-                .Property(tr => tr.TabsTotal)
-                .HasPrecision(18, 2)
-                .HasDefaultValue(0);
-
-            modelBuilder.Entity<Transaction>()
-                .Property(tr => tr.JobTotal)
-                .HasPrecision(18, 2)
-                .HasDefaultValue(0);
+                .Property(t => t.Amount)
+                .HasPrecision(18,2);
 
         }
 

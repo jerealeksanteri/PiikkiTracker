@@ -20,11 +20,6 @@ namespace PiikkiTracker.Data
         [Required(ErrorMessage = "Event Is Required")]
         public string Event { get; set; }
 
-        public int? TransactionId { get; set; } = null;
-        public Transaction Transaction { get; set; }
-
-        public DateTime? TransactionAddedDate { get; set; }
-
         public string? Description { get; set; }
 
         public bool IsAccepted { get; set; } = false;

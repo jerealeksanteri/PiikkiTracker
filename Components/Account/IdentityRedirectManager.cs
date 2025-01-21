@@ -18,7 +18,10 @@ namespace PiikkiTracker.Components.Account
         [DoesNotReturn]
         public void RedirectTo(string? uri)
         {
-            uri ??= "";
+            if (uri is null)
+            {
+                uri = "/";
+            }
 
             // Prevent open redirects.
             if (!Uri.IsWellFormedUriString(uri, UriKind.Relative))

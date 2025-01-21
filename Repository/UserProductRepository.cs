@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using System.Xml;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PiikkiTracker.Data;
 using PiikkiTracker.Repository.IRepository;
 using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
@@ -15,15 +18,40 @@ namespace PiikkiTracker.Repository
         public async Task<UserProduct> CreateUserProductAsync(UserProduct userProduct)
         {
             await _db.UserProducts.AddAsync(userProduct);
+            
+            
+            // Debit the User
+            ApplicationUser? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userProduct.UserId);
+            if (user is null)
+            {
+                throw new DataException("UserId was not found!");
+            }
+            
+            Product? product = await _db.Products.FirstOrDefaultAsync(p => p.Id == userProduct.ProductId);
+            if (product is null)
+            {
+                throw new DataException("Product was not found!");
+            }
+
+            user.Debit(product.Price * userProduct.Amount);
+            _db.Users.Update(user);
+
             await _db.SaveChangesAsync();
+
             return userProduct;
         }
         public async Task<bool> DeleteUserProductAsync(int userProductId)
         {
-            var obj = _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProductId);
-            if (await obj != null)
+            var obj = await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProductId);
+            if (obj != null)
             {
-                _db.UserProducts.Remove(await obj);
+                // Credit the User
+                ApplicationUser user = obj.User;
+                user.Credit(obj.Amount * obj.Product.Price);
+
+                _db.Users.Update(user);
+
+                _db.UserProducts.Remove(obj);
                 return await _db.SaveChangesAsync() > 0;
             }
             return false;
@@ -43,9 +71,36 @@ namespace PiikkiTracker.Repository
         }
         public async Task<UserProduct> UpdateUserProductAsync(UserProduct userProduct)
         {
-            var obj = await _db.UserProducts.Include(uj => uj.Product).Include(uj => uj.User).FirstOrDefaultAsync(u => u.Id == userProduct.Id);
+            var obj = await _db.UserProducts.Include(up => up.Product).Include(up => up.User).FirstOrDefaultAsync(up => up.Id == userProduct.Id);
             if (obj != null)
             {
+                // Check the balance
+                Product? newProduct = await _db.Products.FirstOrDefaultAsync(p => p.Id == userProduct.ProductId);
+                if (newProduct is null)
+                {
+                    throw new DataException("Product was not found");
+                }
+                bool isBalanceCorrect = (obj.Amount * obj.Product.Price) == (userProduct.Amount * newProduct.Price);
+
+                // If balances do not match
+                if (!isBalanceCorrect)
+                {
+                    ApplicationUser? debtor = await _db.Users.FirstOrDefaultAsync(u => u.Id == userProduct.UserId);
+                    ApplicationUser? creditor = await _db.Users.FirstOrDefaultAsync(u => u.Id == obj.UserId);
+
+                    if (debtor is null || creditor is null)
+                    {
+                        throw new DataException("Creditor or Debtor User was not found!");
+                    }
+
+                    creditor.Credit(obj.Amount * obj.Product.Price);
+                    debtor.Debit(userProduct.Amount * newProduct.Price);
+                    
+                    _db.Users.Update(creditor);
+                    _db.Users.Update(debtor);
+                }
+
+
                 obj.UserId = userProduct.UserId;
                 obj.ProductId = userProduct.ProductId;
                 obj.Amount = userProduct.Amount;
