@@ -11,6 +11,8 @@ namespace PiikkiTracker.Data
         public DbSet<UserJob> UserJobs { get; set; }
         public DbSet<UserProduct> UserProducts { get; set; }
 
+        public DbSet<Transaction> Transactions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
