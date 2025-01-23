@@ -12,7 +12,7 @@ public class ApplicationUser : IdentityUser
 
     public string? TelegramNickname { get; set; } = null;
 
-    private decimal Balance { get; set; } = 0;
+    public decimal Balance { get; set; } = 0;
 
     public ICollection<UserJob> UserJobs { get; set; } = new List<UserJob>();
     public ICollection<UserProduct> UserProducts { get; set; } = new List<UserProduct>();

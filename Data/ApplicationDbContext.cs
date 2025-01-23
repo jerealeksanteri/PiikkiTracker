@@ -16,6 +16,7 @@ namespace PiikkiTracker.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
                 .HasPrecision(18, 2);
@@ -62,6 +63,10 @@ namespace PiikkiTracker.Data
 
             modelBuilder.Entity<Transaction>()
                 .Property(t => t.Amount)
+                .HasPrecision(18,2);
+
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(u => u.Balance)
                 .HasPrecision(18,2);
 
         }

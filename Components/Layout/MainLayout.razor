@@ -43,16 +43,16 @@
     private async Task<bool> ShowNavBar(){
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
+        var authClaims = authState.User;
 
-        var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
+        var authenticated = authClaims.Identity is not null && authClaims.Identity.IsAuthenticated;
 
         if (!authenticated)
         {
             return true;
         }
         
-        if (!user.IsInRole(SD.Role_Admin))
+        if (!authClaims.IsInRole(SD.Role_Admin))
         {
             return true;
         }

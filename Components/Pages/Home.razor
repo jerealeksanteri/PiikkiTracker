@@ -1,59 +1,94 @@
 ﻿@page "/"
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Home</PageTitle>
 
-
-<div class="card shadow border-0 mt-4">
-    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
-        <div class="row">
-            <div class="col-12 text-center">
-                <h2 class="text-white py-2">Welcome to TabTracker!</h2>
+@if (IsLoading){
+    <p><em>Loading...</em></p>
+} else {
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">Welcome to TabTracker!</h2>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="row">
+        <div class="row">
 
-        <AuthorizeView>
-            <Authorized>
-                <div class="col-md-6">
-                    <div class="card m-4">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Actions</h5>
-                            <div class="card-text mb-4">
-                                <a href="userjobs/create" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-square"></i> Log a new Job done
-                                </a>
+            <AuthorizeView>
+                <Authorized>
+                    <div class="col-md-6">
+                        <div class="card m-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Actions</h5>
+                                <div class="card-text mb-4">
+                                    <a href="userjobs/create" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-square"></i> Log a new Job done
+                                    </a>
+                                </div>
+
+                                <div class="card-text mb-4">
+                                    <a href="userproducts/create" class="btn btn-sm btn-success">
+                                        <i class="bi bi-plus-square"></i> Log a new Product in Tab
+                                    </a>
+                                </div>
                             </div>
-
-                            <div class="card-text mb-4">
-                                <a href="userproducts/create" class="btn btn-sm btn-success">
-                                    <i class="bi bi-plus-square"></i> Log a new Product in Tab
-                                </a>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card m-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Tab</h5>
+                                <div class="card-text mb-4">
+                                    <h4>Account Balance: </h4>
+                                    <h2>@user?.GetBalance()</h2>
+                                    <h4>€</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card m-4">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Tab</h5>
-                            <div class="card-text mb-4">
-                                
-                            </div>
-                        </div>
+                </Authorized>
+                <NotAuthorized>
+                    <div class="card-body">
+                        <p class="p-4"><em>Continue to sign in!</em></p>
                     </div>
-                </div>
-                
-            </Authorized>
-            <NotAuthorized>
-                <div class="card-body">
-                    <p class="p-4"><em>Continue to sign in!</em></p>
-                </div>
 
-            </NotAuthorized>
-        </AuthorizeView>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
     </div>
-</div>
+}
 
+@code {
+    public bool IsLoading = true;
+
+    public ApplicationUser? user = null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender){
+            await LoadUser();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task LoadUser()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (!authState.User.Identity.IsAuthenticated){
+            user = null;
+        }
+        
+        var userPrincipals = authState?.User;
+        user = await UserManager.GetUserAsync(userPrincipals);
+
+    }
+
+}
