@@ -1,0 +1,221 @@
+@page "/transactions/create"
+@page "/transactions/update/{id:int}"
+
+@inject ITransactionRepository _transactionRepository
+@inject NavigationManager _navigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IJSRuntime _js
+
+@if (IsLoading) 
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView Context="authContext">
+        <Authorized>
+            @if (IsAdmin)
+            {
+                <div class="card shadow border-0 mt-4">
+                    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <EditForm Model="transaction" FormName="TransactionUpsertAdminForm" OnValidSubmit="UpsertTransaction">
+                            <DataAnnotationsValidator/>
+                            <ValidationSummary/>
+
+                            <div class="form-floating py-3 col-12">
+                                <InputSelect @bind-Value="transaction.UserId" class="form-select" id="UserId">
+                                    @foreach (ApplicationUser user in users)
+                                    {
+                                        <option value="@user.Id">@(user.FirstName) @(user.LastName)</option>
+                                    }
+                                </InputSelect>
+                                <label for="UserId">User</label>
+                                <ValidationMessage For="@(() => transaction.UserId)"/>
+                            </div>
+
+                            <div class="form-floating py-3 col-12">
+                                <InputSelect @bind-Value="transaction.TransactionType" class="form-select" id="Type">
+                                    <option value="@(TransactionType.CASH)">Cash</option>
+                                    <option value="@(TransactionType.CARD)" disabled>Card</option>
+                                </InputSelect>
+                                <label for="Type">Type</label>
+                                <ValidationMessage For="@(() => transaction.TransactionType)"/>
+                            </div>
+
+                            <div class="form-floating py-3 col-12">
+                                <InputNumber @bind-Value="transaction.Amount" class="form-control" id="Amount"/>
+                                <label for="Amount">Amount</label>
+                                <ValidationMessage For="@(() => transaction.Amount)"/>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-6 col-md-3">
+                                    <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                        <i class="bi bi-save"></i> Save
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <a href="userjobs" class="btn btn-secondary form-control" type="reset" disabled="@IsLoading">
+                                        <i class="bi bi-arrow-bar-left"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+
+                        </EditForm>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow border-0 mt-4">
+                    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <EditForm Model="transaction" FormName="TransactionUpsertAdminForm" OnValidSubmit="UpsertTransaction">
+                            <DataAnnotationsValidator/>
+                            <ValidationSummary/>
+
+                            <div class="form-floating py-3 col-12">
+                                <InputSelect @bind-Value="transaction.TransactionType" class="form-select" id="Type">
+                                    <option value="@TransactionType.CASH">Cash</option>
+                                    <option value="@(TransactionType.CARD)" disabled>Card</option>
+                                </InputSelect>
+                                <label for="Type">Type</label>
+                                <ValidationMessage For="@(() => transaction.TransactionType)"/>
+                            </div>
+
+                            <div class="form-floating py-3 col-12">
+                                <InputNumber @bind-Value="transaction.Amount" class="form-control" id="Amount"/>
+                                <label for="Amount">Amount</label>
+                                <ValidationMessage For="@(() => transaction.Amount)"/>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-6 col-md-3">
+                                    <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                        <i class="bi bi-save"></i> Save
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <a href="userjobs" class="btn btn-secondary form-control" type="reset" disabled="@IsLoading">
+                                        <i class="bi bi-arrow-bar-left"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+
+
+                        </EditForm>
+                    </div>
+                </div>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <p><em>You are not authorized to view this page!</em></p>
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+
+@code {
+    public bool IsLoading = true;
+
+    private AuthenticationState? authContext => AuthenticationStateProvider.GetAuthenticationStateAsync().Result;
+
+    private ApplicationUser? identityUser { get; set; }
+
+    public bool IsAdmin { get; set; } = false;
+
+    [Parameter]
+    public int Id { get; set; } = 0;
+
+    [SupplyParameterFromForm]
+    public Transaction transaction { get; set; } = new Transaction();
+
+    public IEnumerable<ApplicationUser> users { get; set; } = new List<ApplicationUser>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var user = authContext.User;
+            var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
+
+            IsAdmin = authenticated && user.IsInRole(SD.Role_Admin);
+
+            await LoadTransaction();
+            await LoadUsers();
+
+            IsLoading = false;
+            StateHasChanged();
+
+        }
+    }
+
+    private async Task LoadTransaction()
+    {
+        if (Id != 0)
+        {
+            transaction = await _transactionRepository.GetTransactionByIdAsync(Id);
+        }
+        else
+        {
+            var user = authContext?.User;
+            identityUser = await UserManager.GetUserAsync(user);
+            
+            if (identityUser != null)
+            {
+                transaction.UserId = identityUser.Id;
+            }
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        await Task.Run(() =>
+        {
+            users = UserManager.Users.ToList();
+        });
+    }
+
+    private async Task UpsertTransaction()
+    {
+        IsLoading = true;
+
+        if (transaction.UserId is null)
+        {
+            var user = authContext?.User;
+            var identityUser = await UserManager.GetUserAsync(user);
+            transaction.UserId = identityUser?.Id;
+        }
+
+        if (Id == 0)
+        {
+            await _transactionRepository.CreateTransactionAsync(transaction);
+            await _js.ToastrSuccess("Transaction created successfully!");
+        }
+        else
+        {
+            await _transactionRepository.UpdateTransactionAsync(transaction);
+            await _js.ToastrSuccess("Transaction saved successfully!");
+        }
+
+        IsLoading = false;
+
+        _navigationManager.NavigateTo("/");
+    }
+}
