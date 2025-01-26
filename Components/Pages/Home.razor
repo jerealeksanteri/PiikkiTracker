@@ -22,16 +22,23 @@
                     <div class="col-md-6">
                         <div class="card m-4">
                             <div class="card-body">
-                                <h5 class="card-title mb-4">Actions</h5>
-                                <div class="card-text mb-4">
+                                <h4 class="card-title mb-4">Actions</h4>
+                                <hr/>
+                                <div class="card-text mb-2">
                                     <a href="userjobs/create" class="btn btn-sm btn-primary">
                                         <i class="bi bi-plus-square"></i> Log a new Job done
                                     </a>
                                 </div>
 
-                                <div class="card-text mb-4">
+                                <div class="card-text mb-2">
                                     <a href="userproducts/create" class="btn btn-sm btn-success">
                                         <i class="bi bi-plus-square"></i> Log a new Product in Tab
+                                    </a>
+                                </div>
+
+                                <div class="card-text mb-2">
+                                    <a href="transactions/create" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-cash-coin"></i> Transfer Money
                                     </a>
                                 </div>
                             </div>
@@ -39,14 +46,46 @@
                         
                     </div>
                     
+                    <!-- Tab Balance -->
                     <div class="col-md-6">
                         <div class="card m-4">
                             <div class="card-body">
-                                <h5 class="card-title mb-4">Tab</h5>
+                                <h4 class="card-title mb-4">Tab</h4>
+                                <hr/>
                                 <div class="card-text mb-4">
-                                    <h4>Account Balance: </h4>
-                                    <h2>@user?.GetBalance()</h2>
-                                    <h4>€</h4>
+                                    <h5>Account Balance: </h5>
+                                    
+                                    <h2>@(user?.GetBalance()) €</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Leaderboard -->
+                    <div class="col-md-6">
+                        <div class="card m-4">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">Balance Chart</h4>
+                                <hr/>
+                                <div class="card-text mb-4">
+                                    <h5>Not Implemented</h5>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Balance Chart -->
+                    <div class="col-md-6">
+                        <div class="card m-4">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">Balance Chart</h4>
+                                <hr/>
+                                <div class="card-text mb-4">
+                                    <h5>Not Implemented</h5>
+                                    
                                 </div>
                             </div>
                         </div>
