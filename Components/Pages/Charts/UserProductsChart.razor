@@ -1,0 +1,73 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext DbContext 
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+@if (_productSpending == null)
+{
+    <p><em>Loading chart...</em></p>
+}
+else if (!_productSpending.Any())
+{
+    <p>No products purchased yet.</p>
+}
+else
+{
+    // Note the new canvas ID
+    <canvas id="userProductsChart" width="400" height="200"></canvas>
+}
+
+
+@code {
+    private List<ProductSpendingData> _productSpending;
+    private bool _hasChartBeenRendered = false;
+    private ICollection<UserProduct> _products;
+
+    [Parameter]
+    public ICollection<UserProduct> ProductData
+    {
+        get => _products;
+        set
+        {
+            if (_products != value)
+            {
+                _products = value;
+                ProcessData(); 
+            }
+        }
+    }
+
+    private void ProcessData()
+    {
+        if (ProductData == null) return;
+
+        _productSpending = ProductData
+            .Where(up => up.Product != null)
+            .GroupBy(up => up.Product.Name)
+            .Select(group => new ProductSpendingData
+            {
+                ProductName = group.Key,
+                TotalSpent = group.Sum(item => item.Amount * item.Product.Price)
+            })
+            .OrderByDescending(g => g.TotalSpent)
+            .ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_hasChartBeenRendered && _productSpending != null && _productSpending.Any())
+        {
+            await JSRuntime.InvokeVoidAsync("setupProductsColumnChart", _productSpending);
+            _hasChartBeenRendered = true;
+        }
+    }
+
+    public class ProductSpendingData
+    {
+        public string ProductName { get; set; }
+        public decimal TotalSpent { get; set; }
+    }
+}

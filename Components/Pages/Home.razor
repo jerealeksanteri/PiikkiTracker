@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 
@@ -61,35 +63,32 @@
                         </div>
                     </div>
 
-
-                    <!-- Leaderboard -->
-                    <div class="col-md-6">
-                        <div class="card m-4">
-                            <div class="card-body">
-                                <h4 class="card-title mb-4">Balance Chart</h4>
-                                <hr/>
-                                <div class="card-text mb-4">
-                                    <h5>Not Implemented</h5>
-                                    
+                    @if (user is not null)
+                    {
+                        <!-- Balance Chart -->
+                        <div class="col-md-6">
+                            <div class="card m-4">
+                                <div class="card-body">
+                                    <h4 class="card-title mb-4">Balance Over Time</h4>
+                                    <hr/>
+                                    <PiikkiTracker.Components.Pages.Charts.TabChart UserData="user"/>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
 
-                    <!-- Balance Chart -->
-                    <div class="col-md-6">
-                        <div class="card m-4">
-                            <div class="card-body">
-                                <h4 class="card-title mb-4">Balance Chart</h4>
-                                <hr/>
-                                <div class="card-text mb-4">
-                                    <h5>Not Implemented</h5>
-                                    
+                        <!-- Purchases Chart -->
+                        <div class="col-md-6">
+                            <div class="card m-4">
+                                <div class="card-body">
+                                    <h4 class="card-title mb-4">Purchases by Product</h4>
+                                    <hr/>
+                                    <PiikkiTracker.Components.Pages.Charts.UserProductsChart ProductData="user.UserProducts"/>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    }
+                    
                     
                 </Authorized>
                 <NotAuthorized>
@@ -108,26 +107,29 @@
 
     public ApplicationUser? user = null;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if(firstRender){
-            await LoadUser();
-            IsLoading = false;
-            StateHasChanged();
-        }
-    }
-
-
-    private async Task LoadUser()
+    // Use OnInitializedAsync for loading data before the first render.
+    protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        if (!authState.User.Identity.IsAuthenticated){
-            user = null;
-        }
-        
-        var userPrincipals = authState?.User;
-        user = await UserManager.GetUserAsync(userPrincipals);
+        var principal = authState.User;
 
+        if (principal?.Identity?.IsAuthenticated ?? false)
+        {
+            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // This single, efficient query gets ALL data needed for the page and its charts.
+            user = await UserManager.Users
+                .AsNoTracking()
+                .Where(u => u.Id == userId)
+                .Include(u => u.Transactions)
+                .Include(u => u.UserJobs)
+                    .ThenInclude(uj => uj.Job)
+                .Include(u => u.UserProducts)
+                    .ThenInclude(up => up.Product)
+                .FirstOrDefaultAsync();
+        }
+
+        IsLoading = false;
     }
 
 }

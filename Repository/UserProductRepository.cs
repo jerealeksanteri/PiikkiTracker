@@ -96,8 +96,6 @@ namespace PiikkiTracker.Repository
                     creditor.Credit(obj.Amount * obj.Product.Price);
                     debtor.Debit(userProduct.Amount * newProduct.Price);
                     
-                    _db.Users.Update(creditor);
-                    _db.Users.Update(debtor);
                 }
 
 

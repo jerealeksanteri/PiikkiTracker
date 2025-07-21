@@ -3,6 +3,7 @@
 @inject IProductRepository _productRepository
 @inject IJSRuntime _js
 
+<PageTitle>Products</PageTitle>
 <PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
 
 @if (IsLoading)

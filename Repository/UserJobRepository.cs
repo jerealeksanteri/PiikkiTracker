@@ -111,10 +111,6 @@ namespace PiikkiTracker.Repository
                     debtor.Debit(obj.Job.Payment);
                     creditor.Credit(newJob.Payment);
 
-                    _db.Users.Update(debtor);
-                    _db.Users.Update(creditor);
-
-
                 }
 
                 obj.UserId = userJob.UserId;
