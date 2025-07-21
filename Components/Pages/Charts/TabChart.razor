@@ -1,0 +1,97 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext DbContext 
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+@if (_balanceDataPoints == null)
+{
+    <p><em>Loading chart...</em></p>
+}
+else if (!_balanceDataPoints.Any())
+{
+    <p>No account activity found to display.</p>
+}
+else
+{
+    <canvas id="balanceChart" width="400" height="200"></canvas>
+}
+
+@code {
+    private List<BalanceDataPoint> _balanceDataPoints;
+    private bool _hasChartBeenRendered = false;
+    private ApplicationUser _user;
+
+    [Parameter]
+    public ApplicationUser UserData
+    {
+        get => _user;
+        set
+        {
+            if (_user != value)
+            {
+                _user = value;
+                ProcessData();
+            }
+        }
+    }
+
+    private void ProcessData()
+    {
+        if (UserData == null) return;
+
+        var allEvents = new List<BalanceEvent>();
+
+        allEvents.AddRange(UserData.Transactions.Select(t => new BalanceEvent
+        {
+            EventDate = t.CreatedDate,
+            AmountChange = t.Amount
+        }));
+        allEvents.AddRange(UserData.UserJobs.Where(uj => uj.IsAccepted).Select(uj => new BalanceEvent
+        {
+            EventDate = uj.CreatedDate,
+            AmountChange = uj.Job.Payment
+        }));
+        allEvents.AddRange(UserData.UserProducts.Select(up => new BalanceEvent
+        {
+            EventDate = up.CreatedDate,
+            AmountChange = -(up.Amount * up.Product.Price)
+        }));
+
+        var sortedEvents = allEvents.OrderBy(e => e.EventDate).ToList();
+        _balanceDataPoints = new List<BalanceDataPoint>();
+        decimal runningBalance = 0;
+        foreach (var ev in sortedEvents)
+        {
+            runningBalance += ev.AmountChange;
+            _balanceDataPoints.Add(new BalanceDataPoint
+            {
+                Date = ev.EventDate,
+                Balance = runningBalance
+            });
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_hasChartBeenRendered && _balanceDataPoints != null && _balanceDataPoints.Any())
+        {
+            await JSRuntime.InvokeVoidAsync("setupBalanceChart", _balanceDataPoints);
+            _hasChartBeenRendered = true;
+        }
+    }
+
+    public class BalanceDataPoint
+    {
+        public DateTime Date { get; set; }
+        public decimal Balance { get; set; }
+    }
+    private class BalanceEvent
+    {
+        public DateTime EventDate { get; set; }
+        public decimal AmountChange { get; set; }
+    }
+}

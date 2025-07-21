@@ -17,7 +17,7 @@ public class Transaction
     [Required(ErrorMessage = "Amount must be specified!")]
     public decimal Amount { get; set; } = 0;
 
-    public DateTime CreatedDate { get; set; }
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 
 }
 

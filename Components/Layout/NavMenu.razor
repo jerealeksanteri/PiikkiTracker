@@ -40,23 +40,34 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="userjobs/moderation" Match="NavLinkMatch.All">
-                <i class="bi bi-activity" aria-hidden="true"></i> Job Moderation
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
             <NavLink class="nav-link" href="userproducts" Match="NavLinkMatch.All">
                 <i class="bi bi-credit-card" aria-hidden="true"></i> Products Log
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="userproducts/administration" Match="NavLinkMatch.All">
-                <i class="bi bi-bandaid" aria-hidden="true"></i> Tab Administration
+            <NavLink class="nav-link" href="transactions" Match="NavLinkMatch.All">
+                <i class="bi bi-currency-exchange" aria-hidden="true"></i> Transactions Log
             </NavLink>
         </div>
 
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="userjobs/moderation" Match="NavLinkMatch.All">
+                <i class="bi bi-activity" aria-hidden="true"></i> Manage Jobs
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="userproducts/administration" Match="NavLinkMatch.All">
+                <i class="bi bi-bandaid" aria-hidden="true"></i> Manage Tabs
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="transactions/administration" Match="NavLinkMatch.All">
+                <i class="bi bi-bank" aria-hidden="true"></i> Manage Transactions
+            </NavLink>
+        </div>
 
         <AuthorizeView Context="authContext">
             <Authorized>

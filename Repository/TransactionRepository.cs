@@ -16,14 +16,17 @@ public class TransactionRepository : ITransactionRepository
 
     public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync()
     {
-        return await _db.Transactions.ToListAsync();
+        return await _db.Transactions.Include(t => t.User).ToListAsync();
 
     }
 
 
     public async Task<Transaction> GetTransactionByIdAsync(int transactionId)
     {
-        var obj = await _db.Transactions.Include(t => t.User).FirstOrDefaultAsync(t => t.Id == transactionId);
+        var obj = await _db.Transactions
+                            .AsNoTracking()
+                            .Include(t => t.User)
+                            .FirstOrDefaultAsync(t => t.Id == transactionId);
 
         if (obj is null)
         {
@@ -70,15 +73,11 @@ public class TransactionRepository : ITransactionRepository
             }
 
             debtor.Debit(obj.Amount);
-            creditor.Credit(obj.Amount);
-
-            _db.Users.Update(creditor);
-            _db.Users.Update(debtor);
+            creditor.Credit(transaction.Amount);
 
             obj.Amount = transaction.Amount;
             obj.UserId = transaction.UserId;
-
-            _db.Transactions.Update(obj);
+            //_db.Transactions.Update(obj);
 
             await _db.SaveChangesAsync();
         }
