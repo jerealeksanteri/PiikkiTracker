@@ -55,14 +55,6 @@
                         <label for="Input.ConfirmPassword">Confirm Password</label>
                         <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
                     </div>
-                    <div class="form-floating mb-3">
-                        <InputSelect @bind-Value="Input.Role" class="form-select">
-                            <option value="@SD.Role_Admin">@SD.Role_Admin</option>
-                            <option value="@SD.Role_Member" selected>@SD.Role_Member</option>
-                            <option values="@SD.Role_Moderator">@SD.Role_Moderator</option>
-                        </InputSelect>
-                        <label for="role">Select Role</label>
-                    </div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
                 </EditForm>
 
