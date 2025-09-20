@@ -130,6 +130,9 @@ else
 
     public bool IsLoading { get; set; } = true;
     private ApplicationUser? user;
+    private List<string> userRoles = new();
+    private List<string> availableRoles = new() { SD.Role_Admin, SD.Role_Moderator, SD.Role_Member };
+    private bool isLastAdmin = false;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -147,6 +150,13 @@ else
                     UserName = user.UserName,
                     Balance = user.Balance
                 };
+
+                // Load user roles
+                var roles = await _userRepository.GetUserRolesAsync(user.Id);
+                userRoles = roles.ToList();
+
+                // Check if this is the last admin
+                isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
             }
         }
         IsLoading = false;
@@ -181,6 +191,64 @@ else
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private async Task HandleRoleChange(string role, bool isChecked)
+    {
+        try
+        {
+            if (user == null) return;
+
+            if (isChecked)
+            {
+                // Add role
+                if (!userRoles.Contains(role))
+                {
+                    var result = await _userRepository.AddUserToRoleAsync(user.Id, role);
+                    if (result)
+                    {
+                        userRoles.Add(role);
+                        _js?.ToastrSuccess($"Role {role} added successfully");
+                    }
+                    else
+                    {
+                        _js?.ToastrError($"Failed to add role {role}");
+                    }
+                }
+            }
+            else
+            {
+                // Remove role
+                if (userRoles.Contains(role))
+                {
+                    // Check if trying to remove admin role from last admin
+                    if (role == SD.Role_Admin && await _userRepository.IsLastAdminAsync(user.Id))
+                    {
+                        _js?.ToastrError("Cannot remove admin role from the last admin user");
+                        return;
+                    }
+
+                    var result = await _userRepository.RemoveUserFromRoleAsync(user.Id, role);
+                    if (result)
+                    {
+                        userRoles.Remove(role);
+                        _js?.ToastrSuccess($"Role {role} removed successfully");
+                    }
+                    else
+                    {
+                        _js?.ToastrError($"Failed to remove role {role}");
+                    }
+                }
+            }
+
+            // Update the last admin status
+            isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _js?.ToastrError($"Error updating role: {ex.Message}");
         }
     }
 
