@@ -299,4 +299,20 @@ else
 
         StateHasChanged(); // Ensure UI updates
     }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Admin" => "bg-danger",
+            "Moderator" => "bg-warning",
+            "Member" => "bg-secondary",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private async Task<bool> CanDeleteUser(string userId)
+    {
+        return !await _userRepository.IsLastAdminAsync(userId);
+    }
 }
