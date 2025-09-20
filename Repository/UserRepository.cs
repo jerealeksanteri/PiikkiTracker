@@ -54,7 +54,7 @@ namespace PiikkiTracker.Repository
             {
                 return false;
             }
-
+            
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
         }
