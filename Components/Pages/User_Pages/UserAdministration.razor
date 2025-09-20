@@ -222,15 +222,24 @@ else
             }
             else
             {
-                // Delete user completely
-                result = await _userRepository.DeleteUserAsync(UserID);
-                if (result)
+                // Check if this is the last admin before deleting
+                if (await _userRepository.IsLastAdminAsync(UserID))
                 {
-                    _js?.ToastrSuccess($"User {UserName} deleted successfully");
+                    _js?.ToastrError("Cannot delete the last admin user. There must be at least one admin in the system.");
+                    result = false;
                 }
                 else
                 {
-                    _js?.ToastrError("There was an error while deleting the user");
+                    // Delete user completely
+                    result = await _userRepository.DeleteUserAsync(UserID);
+                    if (result)
+                    {
+                        _js?.ToastrSuccess($"User {UserName} deleted successfully");
+                    }
+                    else
+                    {
+                        _js?.ToastrError("There was an error while deleting the user");
+                    }
                 }
             }
 

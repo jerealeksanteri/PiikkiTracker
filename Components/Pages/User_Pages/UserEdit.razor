@@ -71,6 +71,28 @@ else
                             <ValidationMessage For="@(() => userModel.Balance)"/>
                         </div>
 
+                        <div class="py-3">
+                            <label class="form-label">User Roles</label>
+                            <div class="card p-3">
+                                @foreach (var role in availableRoles)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_@role"
+                                               checked="@userRoles.Contains(role)"
+                                               @onchange="@((e) => HandleRoleChange(role, (bool)e.Value!))"
+                                               disabled="@(role == SD.Role_Admin && isLastAdmin)" />
+                                        <label class="form-check-label" for="role_@role">
+                                            @role
+                                            @if (role == SD.Role_Admin && isLastAdmin)
+                                            {
+                                                <small class="text-warning">(Cannot remove - last admin)</small>
+                                            }
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
                         <div class="row pt-2">
                             <div class="col-6 col-md-3">
                                 <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
