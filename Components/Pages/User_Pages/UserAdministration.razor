@@ -68,6 +68,15 @@ else
                                         <td>@user.Email</td>
                                         <td>@user.UserName</td>
                                         <td>
+                                            @if (userRoles.ContainsKey(user.Id))
+                                            {
+                                                @foreach (var role in userRoles[user.Id])
+                                                {
+                                                    <span class="badge @GetRoleBadgeClass(role) me-1">@role</span>
+                                                }
+                                            }
+                                        </td>
+                                        <td>
                                             <span class="badge @(user.Balance >= 0 ? "bg-success" : "bg-danger")">
                                                 @user.Balance.ToString("C")
                                             </span>
@@ -126,6 +135,7 @@ else
     private CancellationTokenSource? _cts;
 
     public IEnumerable<ApplicationUser> users = new List<ApplicationUser>();
+    private Dictionary<string, IList<string>> userRoles = new Dictionary<string, IList<string>>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -140,11 +150,27 @@ else
     private async Task LoadUsers()
     {
         users = await _userRepository.GetAllUsersAsync();
+
+        // Load roles for each user
+        userRoles.Clear();
+        foreach (var user in users)
+        {
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
+            userRoles[user.Id] = roles;
+        }
     }
 
     private async Task SearchUsers(string searchTerm)
     {
         users = await _userRepository.SearchUsersAsync(searchTerm);
+
+        // Load roles for each user
+        userRoles.Clear();
+        foreach (var user in users)
+        {
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
+            userRoles[user.Id] = roles;
+        }
     }
 
     private void HandleDelete(string id, string userName)
