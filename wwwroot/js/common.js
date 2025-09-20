@@ -13,3 +13,11 @@ function ShowAcceptModal() {
 function HideAcceptModal() {
     bootstrap.Modal.getOrCreateInstance(document.getElementById('acceptionModal')).hide();
 }
+
+function ShowPasswordResetModal() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('passwordResetModal')).show();
+}
+
+function HidePasswordResetModal() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('passwordResetModal')).hide();
+}
