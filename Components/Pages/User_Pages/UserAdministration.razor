@@ -70,10 +70,7 @@ else
                                         <td>
                                             @if (userRoles.ContainsKey(user.Id))
                                             {
-                                                @foreach (var role in userRoles[user.Id])
-                                                {
-                                                    <span class="badge @GetRoleBadgeClass(role) me-1">@role</span>
-                                                }
+                                                <span class="badge @GetRoleBadgeClass(userRoles[user.Id])">@userRoles[user.Id]</span>
                                             }
                                         </td>
                                         <td>
@@ -135,7 +132,7 @@ else
     private CancellationTokenSource? _cts;
 
     public IEnumerable<ApplicationUser> users = new List<ApplicationUser>();
-    private Dictionary<string, IList<string>> userRoles = new Dictionary<string, IList<string>>();
+    private Dictionary<string, string> userRoles = new Dictionary<string, string>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -151,12 +148,12 @@ else
     {
         users = await _userRepository.GetAllUsersAsync();
 
-        // Load roles for each user
+        // Load role for each user (should be only one)
         userRoles.Clear();
         foreach (var user in users)
         {
             var roles = await _userRepository.GetUserRolesAsync(user.Id);
-            userRoles[user.Id] = roles;
+            userRoles[user.Id] = roles.FirstOrDefault() ?? SD.Role_Member;
         }
     }
 
@@ -164,12 +161,12 @@ else
     {
         users = await _userRepository.SearchUsersAsync(searchTerm);
 
-        // Load roles for each user
+        // Load role for each user (should be only one)
         userRoles.Clear();
         foreach (var user in users)
         {
             var roles = await _userRepository.GetUserRolesAsync(user.Id);
-            userRoles[user.Id] = roles;
+            userRoles[user.Id] = roles.FirstOrDefault() ?? SD.Role_Member;
         }
     }
 

@@ -72,20 +72,20 @@ else
                         </div>
 
                         <div class="py-3">
-                            <label class="form-label">User Roles</label>
+                            <label class="form-label">User Role</label>
                             <div class="card p-3">
                                 @foreach (var role in availableRoles)
                                 {
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_@role"
-                                               checked="@userRoles.Contains(role)"
-                                               @onchange="@((e) => HandleRoleChange(role, (bool)e.Value!))"
-                                               disabled="@(role == SD.Role_Admin && isLastAdmin)" />
+                                        <input class="form-check-input" type="radio" name="userRole" id="role_@role"
+                                               checked="@(currentUserRole == role)"
+                                               @onchange="@(() => HandleRoleChange(role))"
+                                               disabled="@(currentUserRole == SD.Role_Admin && isLastAdmin && role != SD.Role_Admin)" />
                                         <label class="form-check-label" for="role_@role">
                                             @role
-                                            @if (role == SD.Role_Admin && isLastAdmin)
+                                            @if (currentUserRole == SD.Role_Admin && isLastAdmin && role != SD.Role_Admin)
                                             {
-                                                <small class="text-warning">(Cannot remove - last admin)</small>
+                                                <small class="text-warning">(Cannot change - last admin)</small>
                                             }
                                         </label>
                                     </div>
@@ -130,7 +130,7 @@ else
 
     public bool IsLoading { get; set; } = true;
     private ApplicationUser? user;
-    private List<string> userRoles = new();
+    private string currentUserRole = SD.Role_Member;
     private List<string> availableRoles = new() { SD.Role_Admin, SD.Role_Moderator, SD.Role_Member };
     private bool isLastAdmin = false;
 
@@ -151,9 +151,9 @@ else
                     Balance = user.Balance
                 };
 
-                // Load user roles
+                // Load user role (should be only one)
                 var roles = await _userRepository.GetUserRolesAsync(user.Id);
-                userRoles = roles.ToList();
+                currentUserRole = roles.FirstOrDefault() ?? SD.Role_Member;
 
                 // Check if this is the last admin
                 isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
@@ -194,57 +194,47 @@ else
         }
     }
 
-    private async Task HandleRoleChange(string role, bool isChecked)
+    private async Task HandleRoleChange(string newRole)
     {
         try
         {
-            if (user == null) return;
+            if (user == null || newRole == currentUserRole) return;
 
-            if (isChecked)
+            // Check if trying to change admin role when this is the last admin
+            if (currentUserRole == SD.Role_Admin && isLastAdmin && newRole != SD.Role_Admin)
             {
-                // Add role
-                if (!userRoles.Contains(role))
+                _js?.ToastrError("Cannot change role of the last admin user");
+                return;
+            }
+
+            // Remove current role
+            if (!string.IsNullOrEmpty(currentUserRole))
+            {
+                var removeResult = await _userRepository.RemoveUserFromRoleAsync(user.Id, currentUserRole);
+                if (!removeResult)
                 {
-                    var result = await _userRepository.AddUserToRoleAsync(user.Id, role);
-                    if (result)
-                    {
-                        userRoles.Add(role);
-                        _js?.ToastrSuccess($"Role {role} added successfully");
-                    }
-                    else
-                    {
-                        _js?.ToastrError($"Failed to add role {role}");
-                    }
+                    _js?.ToastrError($"Failed to remove current role {currentUserRole}");
+                    return;
                 }
+            }
+
+            // Add new role
+            var addResult = await _userRepository.AddUserToRoleAsync(user.Id, newRole);
+            if (addResult)
+            {
+                currentUserRole = newRole;
+                _js?.ToastrSuccess($"Role changed to {newRole} successfully");
+
+                // Update the last admin status
+                isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
+                StateHasChanged();
             }
             else
             {
-                // Remove role
-                if (userRoles.Contains(role))
-                {
-                    // Check if trying to remove admin role from last admin
-                    if (role == SD.Role_Admin && await _userRepository.IsLastAdminAsync(user.Id))
-                    {
-                        _js?.ToastrError("Cannot remove admin role from the last admin user");
-                        return;
-                    }
-
-                    var result = await _userRepository.RemoveUserFromRoleAsync(user.Id, role);
-                    if (result)
-                    {
-                        userRoles.Remove(role);
-                        _js?.ToastrSuccess($"Role {role} removed successfully");
-                    }
-                    else
-                    {
-                        _js?.ToastrError($"Failed to remove role {role}");
-                    }
-                }
+                // If adding new role failed, try to restore the old role
+                await _userRepository.AddUserToRoleAsync(user.Id, currentUserRole);
+                _js?.ToastrError($"Failed to change role to {newRole}");
             }
-
-            // Update the last admin status
-            isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
-            StateHasChanged();
         }
         catch (Exception ex)
         {
