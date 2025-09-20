@@ -1,0 +1,238 @@
+@page "/users/administration"
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@using PiikkiTracker.Repository.IRepository
+@using System.Timers;
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserRepository _userRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+<PageTitle>User Administration</PageTitle>
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">User Administration</h2>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authContext" Roles="@SD.Role_Admin">
+            <Authorized>
+
+                <div class="card-body p-4">
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="Search">Search:</label>
+                            <InputText class="form-control" @bind-Value="searchTerm" @oninput="HandleInput" id="Search" placeholder="Search by name, email, or username..."/>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <a class="btn btn-success me-2" href="Account/Register">
+                                <i class="bi bi-plus-circle"></i> Create New User
+                            </a>
+                        </div>
+                    </div>
+
+                    @if (users.Any())
+                    {
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Username</th>
+                                    <th>Balance</th>
+                                    <th>Jobs Done</th>
+                                    <th>Products Bought</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (ApplicationUser user in users)
+                                {
+                                    <tr>
+                                        <td>@user.FirstName @user.LastName</td>
+                                        <td>@user.Email</td>
+                                        <td>@user.UserName</td>
+                                        <td>
+                                            <span class="badge @(user.Balance >= 0 ? "bg-success" : "bg-danger")">
+                                                @user.Balance.ToString("C")
+                                            </span>
+                                        </td>
+                                        <td>@user.UserJobs?.Count()</td>
+                                        <td>@user.UserProducts?.Count()</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary me-1" href="@($"users/edit/{user.Id}")">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-warning me-1" @onclick="() => HandleResetData(user.Id, user.FirstName + ' ' + user.LastName)">
+                                                <i class="bi bi-arrow-clockwise"></i> Reset Data
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => HandleDelete(user.Id, user.FirstName + ' ' + user.LastName)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Total Users: @users.Count() |
+                                Total Balance: @users.Sum(u => u.Balance).ToString("C")
+                            </small>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>No Users found</p>
+                    }
+                </div>
+            </Authorized>
+
+            <NotAuthorized>
+                <p><em>Not authorized</em></p>
+            </NotAuthorized>
+
+        </AuthorizeView>
+    </div>
+}
+
+@code {
+    public string searchTerm { get; set; } = "";
+    public bool IsLoading { get; set; } = true;
+    private string UserID { get; set; } = "";
+    private string UserName { get; set; } = "";
+    private bool IsResetAction { get; set; } = false;
+
+    private CancellationTokenSource? _cts;
+
+    public IEnumerable<ApplicationUser> users = new List<ApplicationUser>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUsers();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await _userRepository.GetAllUsersAsync();
+    }
+
+    private async Task SearchUsers(string searchTerm)
+    {
+        users = await _userRepository.SearchUsersAsync(searchTerm);
+    }
+
+    private void HandleDelete(string id, string userName)
+    {
+        UserID = id;
+        UserName = userName;
+        IsResetAction = false;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private void HandleResetData(string id, string userName)
+    {
+        UserID = id;
+        UserName = userName;
+        IsResetAction = true;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+
+        if (isConfirmed && !string.IsNullOrEmpty(UserID))
+        {
+            bool result = false;
+
+            if (IsResetAction)
+            {
+                // Reset user data (delete jobs and products)
+                result = await _userRepository.ResetUserDataAsync(UserID);
+                if (result)
+                {
+                    _js?.ToastrSuccess($"User data reset successfully for {UserName}");
+                }
+                else
+                {
+                    _js?.ToastrError("There was an error while resetting user data");
+                }
+            }
+            else
+            {
+                // Delete user completely
+                result = await _userRepository.DeleteUserAsync(UserID);
+                if (result)
+                {
+                    _js?.ToastrSuccess($"User {UserName} deleted successfully");
+                }
+                else
+                {
+                    _js?.ToastrError("There was an error while deleting the user");
+                }
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadUsers();
+        }
+
+        UserID = "";
+        UserName = "";
+        IsResetAction = false;
+        IsLoading = false;
+    }
+
+    public async Task HandleInput(ChangeEventArgs eventArgs)
+    {
+        searchTerm = eventArgs.Value?.ToString();
+
+        // Cancel tasks
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        // Debounce: 1000ms
+        try
+        {
+            await Task.Delay(1000, _cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        // If empty search
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadUsers();
+        }
+        else
+        {
+            // Execute search
+            await SearchUsers(searchTerm);
+        }
+
+        StateHasChanged(); // Ensure UI updates
+    }
+}
