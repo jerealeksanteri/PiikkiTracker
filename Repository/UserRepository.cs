@@ -249,7 +249,7 @@ namespace PiikkiTracker.Repository
 
             return usersWithSpending
                 .Where(u => u.UserProducts != null && u.UserProducts.Any())
-                .OrderByDescending(u => u.UserProducts.Sum(up => up.Product?.Price ?? 0))
+                .OrderByDescending(u => u.UserProducts.Sum(up => (up.Product?.Price ?? 0) * up.Amount))
                 .Take(count)
                 .ToList();
         }

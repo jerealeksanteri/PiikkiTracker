@@ -37,7 +37,7 @@
                                 @for (int i = 0; i < TopSpenders.Count(); i++)
                                 {
                                     var user = TopSpenders.ElementAt(i);
-                                    var totalSpent = user.UserProducts?.Sum(up => up.Product?.Price ?? 0) ?? 0;
+                                    var totalSpent = user.UserProducts?.Sum(up => (up.Product?.Price ?? 0) * up.Amount) ?? 0;
                                     <div class="d-flex justify-content-between align-items-center mb-2 @(i == 0 ? "bg-warning bg-opacity-25 p-2 rounded" : "")">
                                         <div>
                                             <span class="fw-bold">@GetRankIcon(i + 1) @user.FirstName @user.LastName</span>
@@ -137,23 +137,16 @@
     {
         try
         {
-            var tasks = new[]
-            {
-                _userRepository.GetTopSpendersAsync(5),
-                _userRepository.GetTopJobPerformersAsync(5),
-                _userRepository.GetTopBalanceHoldersAsync(5)
-            };
-
-            var results = await Task.WhenAll(tasks);
-
-            TopSpenders = results[0];
-            TopJobPerformers = results[1];
-            TopBalanceHolders = results[2];
+            // Run sequentially to avoid DbContext concurrency issues
+            TopSpenders = await _userRepository.GetTopSpendersAsync(5);
+            TopJobPerformers = await _userRepository.GetTopJobPerformersAsync(5);
+            TopBalanceHolders = await _userRepository.GetTopBalanceHoldersAsync(5);
         }
         catch (Exception ex)
         {
             // Handle error gracefully
             Console.WriteLine($"Error loading leaderboards: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
         finally
         {
