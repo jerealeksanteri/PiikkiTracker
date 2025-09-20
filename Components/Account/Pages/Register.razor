@@ -31,6 +31,16 @@
                     <hr />
                     <ValidationSummary class="text-danger" role="alert" />
                     <div class="form-floating mb-3">
+                        <InputText @bind-Value="Input.FirstName" id="Input.FirstName" class="form-control" aria-required="true" placeholder="First Name" />
+                        <label for="Input.FirstName">First Name</label>
+                        <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="Input.LastName" id="Input.LastName" class="form-control" aria-required="true" placeholder="Last Name" />
+                        <label for="Input.LastName">Last Name</label>
+                        <ValidationMessage For="() => Input.LastName" class="text-danger" />
+                    </div>
+                    <div class="form-floating mb-3">
                         <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                         <label for="Input.Email">Email</label>
                         <ValidationMessage For="() => Input.Email" class="text-danger" />
@@ -44,14 +54,6 @@
                         <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
                         <label for="Input.ConfirmPassword">Confirm Password</label>
                         <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-                    </div>
-                    <div class="form-floating mb-3">
-                        <InputSelect @bind-Value="Input.Role" class="form-select">
-                            <option value="@SD.Role_Admin">@SD.Role_Admin</option>
-                            <option value="@SD.Role_Member" selected>@SD.Role_Member</option>
-                            <option values="@SD.Role_Moderator">@SD.Role_Moderator</option>
-                        </InputSelect>
-                        <label for="role">Select Role</label>
                     </div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
                 </EditForm>
@@ -87,6 +89,10 @@
     {
         var user = CreateUser();
 
+        // Set the user names
+        user.FirstName = Input.FirstName;
+        user.LastName = Input.LastName;
+
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
@@ -100,20 +106,22 @@
 
         Logger.LogInformation("User created a new account with password.");
 
-        if (!await RoleManager.RoleExistsAsync(Input.Role))
+        // Ensure roles exist
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Admin))
         {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Admin));
+        }
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Member))
+        {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Member));
+        }
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Moderator))
+        {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Moderator));
         }
 
-        if (Input.Role is not null) {
-            await UserManager.AddToRoleAsync(user, Input.Role);
-        }
-        else
-        {
-            await UserManager.AddToRoleAsync(user, SD.Role_Member);
-        }
+        // Always assign Member role for normal registration
+        await UserManager.AddToRoleAsync(user, SD.Role_Member);
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -160,6 +168,16 @@
     private sealed class InputModel
     {
         [Required]
+        [StringLength(50, ErrorMessage = "The {0} must be at max {1} characters long.")]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [StringLength(50, ErrorMessage = "The {0} must be at max {1} characters long.")]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
+
+        [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
@@ -174,7 +192,5 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
-
-        public string? Role { get; set; }
     }
 }

@@ -1,0 +1,338 @@
+@page "/users/administration"
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@using PiikkiTracker.Repository.IRepository
+@using System.Timers;
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserRepository _userRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+<PageTitle>User Administration</PageTitle>
+<PiikkiTracker.Components.Shared.BsDeleteModal OnModalConfirmation="ConfirmDelete_Click"></PiikkiTracker.Components.Shared.BsDeleteModal>
+<PiikkiTracker.Components.Shared.BsPasswordResetModal OnPasswordReset="ConfirmPasswordReset_Click" UserName="@SelectedUserName"></PiikkiTracker.Components.Shared.BsPasswordResetModal>
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">User Administration</h2>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authContext" Roles="@SD.Role_Admin">
+            <Authorized>
+
+                <div class="card-body p-4">
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="Search">Search:</label>
+                            <InputText class="form-control" @bind-Value="searchTerm" @oninput="HandleInput" id="Search" placeholder="Search by name, email, or username..."/>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <a class="btn btn-success me-2" href="Account/Register">
+                                <i class="bi bi-plus-circle"></i> Create New User
+                            </a>
+                        </div>
+                    </div>
+
+                    @if (users.Any())
+                    {
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Balance</th>
+                                    <th>Jobs Done</th>
+                                    <th>Products Bought</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (ApplicationUser user in users)
+                                {
+                                    <tr>
+                                        <td>@user.FirstName @user.LastName</td>
+                                        <td>@user.Email</td>
+                                        <td>@user.UserName</td>
+                                        <td>
+                                            @if (userRoles.ContainsKey(user.Id))
+                                            {
+                                                <span class="badge @GetRoleBadgeClass(userRoles[user.Id])">@userRoles[user.Id]</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @(user.Balance >= 0 ? "bg-success" : "bg-danger")">
+                                                @user.Balance.ToString("C")
+                                            </span>
+                                        </td>
+                                        <td>@user.UserJobs?.Count()</td>
+                                        <td>@user.UserProducts?.Count()</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a class="btn btn-sm btn-primary" href="@($"users/edit/{user.Id}")" title="Edit User">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-info" @onclick="() => HandlePasswordReset(user.Id, user.FirstName + ' ' + user.LastName)" title="Reset Password">
+                                                    <i class="bi bi-key"></i>
+                                                </button>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" title="More Actions">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <button class="dropdown-item" type="button" @onclick="() => HandleResetData(user.Id, user.FirstName + ' ' + user.LastName)">
+                                                                <i class="bi bi-arrow-clockwise me-2"></i>Reset Data
+                                                            </button>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button class="dropdown-item text-danger" type="button" @onclick="() => HandleDelete(user.Id, user.FirstName + ' ' + user.LastName)">
+                                                                <i class="bi bi-trash me-2"></i>Delete User
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Total Users: @users.Count() |
+                                Total Balance: @users.Sum(u => u.Balance).ToString("C")
+                            </small>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>No Users found</p>
+                    }
+                </div>
+            </Authorized>
+
+            <NotAuthorized>
+                <p><em>Not authorized</em></p>
+            </NotAuthorized>
+
+        </AuthorizeView>
+    </div>
+}
+
+@code {
+    public string searchTerm { get; set; } = "";
+    public bool IsLoading { get; set; } = true;
+    private string UserID { get; set; } = "";
+    private string UserName { get; set; } = "";
+    private string SelectedUserName { get; set; } = "";
+    private bool IsResetAction { get; set; } = false;
+
+    private CancellationTokenSource? _cts;
+
+    public IEnumerable<ApplicationUser> users = new List<ApplicationUser>();
+    private Dictionary<string, string> userRoles = new Dictionary<string, string>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUsers();
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await _userRepository.GetAllUsersAsync();
+
+        // Load role for each user (should be only one)
+        userRoles.Clear();
+        foreach (var user in users)
+        {
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
+            userRoles[user.Id] = roles.FirstOrDefault() ?? SD.Role_Member;
+        }
+    }
+
+    private async Task SearchUsers(string searchTerm)
+    {
+        users = await _userRepository.SearchUsersAsync(searchTerm);
+
+        // Load role for each user (should be only one)
+        userRoles.Clear();
+        foreach (var user in users)
+        {
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
+            userRoles[user.Id] = roles.FirstOrDefault() ?? SD.Role_Member;
+        }
+    }
+
+    private void HandleDelete(string id, string userName)
+    {
+        UserID = id;
+        UserName = userName;
+        IsResetAction = false;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private void HandlePasswordReset(string id, string userName)
+    {
+        UserID = id;
+        SelectedUserName = userName;
+        // Show the password reset modal
+        _js.InvokeVoidAsync("ShowPasswordResetModal");
+    }
+
+    private void HandleResetData(string id, string userName)
+    {
+        UserID = id;
+        UserName = userName;
+        IsResetAction = true;
+        // Show the modal
+        _js.InvokeVoidAsync("ShowDeletionModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+
+        if (isConfirmed && !string.IsNullOrEmpty(UserID))
+        {
+            bool result = false;
+
+            if (IsResetAction)
+            {
+                // Reset user data (delete jobs and products)
+                result = await _userRepository.ResetUserDataAsync(UserID);
+                if (result)
+                {
+                    _js?.ToastrSuccess($"User data reset successfully for {UserName}");
+                }
+                else
+                {
+                    _js?.ToastrError("There was an error while resetting user data");
+                }
+            }
+            else
+            {
+                // Check if this is the last admin before deleting
+                if (await _userRepository.IsLastAdminAsync(UserID))
+                {
+                    _js?.ToastrError("Cannot delete the last admin user. There must be at least one admin in the system.");
+                    result = false;
+                }
+                else
+                {
+                    // Delete user completely
+                    result = await _userRepository.DeleteUserAsync(UserID);
+                    if (result)
+                    {
+                        _js?.ToastrSuccess($"User {UserName} deleted successfully");
+                    }
+                    else
+                    {
+                        _js?.ToastrError("There was an error while deleting the user");
+                    }
+                }
+            }
+
+            _js?.InvokeVoidAsync("HideDeletionModal");
+            await LoadUsers();
+        }
+
+        UserID = "";
+        UserName = "";
+        IsResetAction = false;
+        IsLoading = false;
+    }
+
+    private async Task ConfirmPasswordReset_Click(string newPassword)
+    {
+        IsLoading = true;
+
+        if (!string.IsNullOrEmpty(UserID) && !string.IsNullOrEmpty(newPassword))
+        {
+            var result = await _userRepository.ResetUserPasswordAsync(UserID, newPassword);
+            if (result)
+            {
+                _js?.ToastrSuccess($"Password reset successfully for {SelectedUserName}");
+            }
+            else
+            {
+                _js?.ToastrError("There was an error while resetting the password");
+            }
+
+            _js?.InvokeVoidAsync("HidePasswordResetModal");
+        }
+
+        UserID = "";
+        SelectedUserName = "";
+        IsLoading = false;
+    }
+
+    public async Task HandleInput(ChangeEventArgs eventArgs)
+    {
+        searchTerm = eventArgs.Value?.ToString();
+
+        // Cancel tasks
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        // Debounce: 1000ms
+        try
+        {
+            await Task.Delay(1000, _cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        // If empty search
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadUsers();
+        }
+        else
+        {
+            // Execute search
+            await SearchUsers(searchTerm);
+        }
+
+        StateHasChanged(); // Ensure UI updates
+    }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Admin" => "bg-danger",
+            "Moderator" => "bg-warning",
+            "Member" => "bg-secondary",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private async Task<bool> CanDeleteUser(string userId)
+    {
+        return !await _userRepository.IsLastAdminAsync(userId);
+    }
+}

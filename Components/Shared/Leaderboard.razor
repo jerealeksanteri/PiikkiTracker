@@ -1,0 +1,167 @@
+@using PiikkiTracker.Repository.IRepository
+@inject IUserRepository _userRepository
+
+<div class="card shadow border-0 mt-4">
+    <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2 class="text-white py-2">🏆 Leaderboards</h2>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading leaderboards...</p>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <!-- Top Spenders -->
+                <div class="col-md-4 mb-4">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-cash-stack"></i> Top Spenders
+                            </h5>
+                            <small>Most money spent on products</small>
+                        </div>
+                        <div class="card-body">
+                            @if (TopSpenders.Any())
+                            {
+                                @for (int i = 0; i < TopSpenders.Count(); i++)
+                                {
+                                    var user = TopSpenders.ElementAt(i);
+                                    var totalSpent = user.UserProducts?.Sum(up => (up.Product?.Price ?? 0) * up.Amount) ?? 0;
+                                    <div class="d-flex justify-content-between align-items-center mb-2 @(i == 0 ? "bg-warning bg-opacity-25 p-2 rounded" : "")">
+                                        <div>
+                                            <span class="fw-bold">@GetRankIcon(i + 1) @user.FirstName @user.LastName</span>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-success">@totalSpent.ToString("C")</span>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No purchases yet</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Job Performers -->
+                <div class="col-md-4 mb-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-briefcase"></i> Top Job Performers
+                            </h5>
+                            <small>Most jobs completed</small>
+                        </div>
+                        <div class="card-body">
+                            @if (TopJobPerformers.Any())
+                            {
+                                @for (int i = 0; i < TopJobPerformers.Count(); i++)
+                                {
+                                    var user = TopJobPerformers.ElementAt(i);
+                                    var jobCount = user.UserJobs?.Count() ?? 0;
+                                    <div class="d-flex justify-content-between align-items-center mb-2 @(i == 0 ? "bg-warning bg-opacity-25 p-2 rounded" : "")">
+                                        <div>
+                                            <span class="fw-bold">@GetRankIcon(i + 1) @user.FirstName @user.LastName</span>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-primary">@jobCount jobs</span>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No jobs completed yet</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Balance Holders -->
+                <div class="col-md-4 mb-4">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-piggy-bank"></i> Healthiest Tab Balances
+                            </h5>
+                            <small>Highest current balances</small>
+                        </div>
+                        <div class="card-body">
+                            @if (TopBalanceHolders.Any())
+                            {
+                                @for (int i = 0; i < TopBalanceHolders.Count(); i++)
+                                {
+                                    var user = TopBalanceHolders.ElementAt(i);
+                                    <div class="d-flex justify-content-between align-items-center mb-2 @(i == 0 ? "bg-warning bg-opacity-25 p-2 rounded" : "")">
+                                        <div>
+                                            <span class="fw-bold">@GetRankIcon(i + 1) @user.FirstName @user.LastName</span>
+                                        </div>
+                                        <div>
+                                            <span class="badge @(user.Balance >= 0 ? "bg-info" : "bg-danger")">@user.Balance.ToString("C")</span>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No users found</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public bool IsLoading { get; set; } = true;
+    public IEnumerable<ApplicationUser> TopSpenders { get; set; } = new List<ApplicationUser>();
+    public IEnumerable<ApplicationUser> TopJobPerformers { get; set; } = new List<ApplicationUser>();
+    public IEnumerable<ApplicationUser> TopBalanceHolders { get; set; } = new List<ApplicationUser>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Run sequentially to avoid DbContext concurrency issues
+            TopSpenders = await _userRepository.GetTopSpendersAsync(5);
+            TopJobPerformers = await _userRepository.GetTopJobPerformersAsync(5);
+            TopBalanceHolders = await _userRepository.GetTopBalanceHoldersAsync(5);
+        }
+        catch (Exception ex)
+        {
+            // Handle error gracefully
+            Console.WriteLine($"Error loading leaderboards: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetRankIcon(int rank)
+    {
+        return rank switch
+        {
+            1 => "🥇",
+            2 => "🥈",
+            3 => "🥉",
+            _ => $"{rank}."
+        };
+    }
+}
