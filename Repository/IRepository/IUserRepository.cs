@@ -12,5 +12,6 @@ namespace PiikkiTracker.Repository.IRepository
         Task<bool> DeleteAllUserJobsAsync(string userId);
         Task<bool> DeleteAllUserProductsAsync(string userId);
         Task<bool> ResetUserDataAsync(string userId);
+        Task<bool> ResetUserPasswordAsync(string userId, string newPassword);
     }
 }

@@ -152,5 +152,26 @@ namespace PiikkiTracker.Repository
                 return false;
             }
         }
+
+        public async Task<bool> ResetUserPasswordAsync(string userId, string newPassword)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return false;
+
+                // Remove the current password
+                var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+                if (!removePasswordResult.Succeeded) return false;
+
+                // Add the new password
+                var addPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
+                return addPasswordResult.Succeeded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
