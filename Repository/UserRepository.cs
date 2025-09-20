@@ -49,6 +49,12 @@ namespace PiikkiTracker.Repository
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return false;
 
+            // Prevent deleting the last admin
+            if (await IsLastAdminAsync(userId))
+            {
+                return false;
+            }
+            
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
         }
@@ -151,6 +157,87 @@ namespace PiikkiTracker.Repository
                 await transaction.RollbackAsync();
                 return false;
             }
+        }
+
+        public async Task<bool> ResetUserPasswordAsync(string userId, string newPassword)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return false;
+
+                // Remove the current password
+                var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+                if (!removePasswordResult.Succeeded) return false;
+
+                // Add the new password
+                var addPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
+                return addPasswordResult.Succeeded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<IList<string>> GetUserRolesAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return new List<string>();
+
+            return await _userManager.GetRolesAsync(user);
+        }
+
+        public async Task<bool> AddUserToRoleAsync(string userId, string role)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return false;
+
+                var result = await _userManager.AddToRoleAsync(user, role);
+                return result.Succeeded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveUserFromRoleAsync(string userId, string role)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return false;
+
+                // Prevent removing admin role if this is the last admin
+                if (role == "Admin" && await IsLastAdminAsync(userId))
+                {
+                    return false;
+                }
+
+                var result = await _userManager.RemoveFromRoleAsync(user, role);
+                return result.Succeeded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> IsLastAdminAsync(string userId)
+        {
+            var adminCount = await GetAdminCountAsync();
+            var userRoles = await GetUserRolesAsync(userId);
+
+            return adminCount == 1 && userRoles.Contains("Admin");
+        }
+
+        public async Task<int> GetAdminCountAsync()
+        {
+            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+            return adminUsers.Count;
         }
     }
 }

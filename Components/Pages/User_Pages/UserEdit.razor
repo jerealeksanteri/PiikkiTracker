@@ -1,0 +1,268 @@
+@page "/users/edit/{id}"
+
+@using Microsoft.AspNetCore.Identity
+@using PiikkiTracker.Utility
+@using PiikkiTracker.Repository.IRepository
+@using System.ComponentModel.DataAnnotations
+
+@inject IUserRepository _userRepository
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager _navigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime _js
+
+<PageTitle>Edit User</PageTitle>
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView Context="authContext" Roles="@SD.Role_Admin">
+        <Authorized>
+            <div class="card shadow border-0 mt-4">
+                <div class="card-header bg-black bg-gradient m-lg-0 py-3">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <h2 class="text-white py-2">Edit User</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <EditForm Model="userModel" FormName="UserEditForm" OnValidSubmit="UpdateUser">
+                        <DataAnnotationsValidator/>
+                        <ValidationSummary/>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating py-3">
+                                    <InputText @bind-Value="userModel.FirstName" class="form-control" id="FirstName" placeholder="First Name"/>
+                                    <label for="FirstName">First Name</label>
+                                    <ValidationMessage For="@(() => userModel.FirstName)"/>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating py-3">
+                                    <InputText @bind-Value="userModel.LastName" class="form-control" id="LastName" placeholder="Last Name"/>
+                                    <label for="LastName">Last Name</label>
+                                    <ValidationMessage For="@(() => userModel.LastName)"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-floating py-3">
+                            <InputText @bind-Value="userModel.Email" class="form-control" id="Email" placeholder="Email"/>
+                            <label for="Email">Email</label>
+                            <ValidationMessage For="@(() => userModel.Email)"/>
+                        </div>
+
+                        <div class="form-floating py-3">
+                            <InputText @bind-Value="userModel.UserName" class="form-control" id="UserName" placeholder="Username"/>
+                            <label for="UserName">Username</label>
+                            <ValidationMessage For="@(() => userModel.UserName)"/>
+                        </div>
+
+                        <div class="form-floating py-3">
+                            <InputNumber @bind-Value="userModel.Balance" class="form-control" id="Balance" placeholder="Balance"/>
+                            <label for="Balance">Balance</label>
+                            <ValidationMessage For="@(() => userModel.Balance)"/>
+                        </div>
+
+                        <div class="py-3">
+                            <label class="form-label">User Role</label>
+                            <div class="card p-3">
+                                @foreach (var role in availableRoles)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="userRole" id="role_@role"
+                                               checked="@(currentUserRole == role)"
+                                               @onchange="@(() => HandleRoleChange(role))"
+                                               disabled="@(currentUserRole == SD.Role_Admin && isLastAdmin && role != SD.Role_Admin)" />
+                                        <label class="form-check-label" for="role_@role">
+                                            @role
+                                            @if (currentUserRole == SD.Role_Admin && isLastAdmin && role != SD.Role_Admin)
+                                            {
+                                                <small class="text-warning">(Cannot change - last admin)</small>
+                                            }
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row pt-2">
+                            <div class="col-6 col-md-3">
+                                <button type="submit" class="btn btn-primary form-control" disabled="@IsLoading">
+                                    @if (IsLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        <span>Updating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Update</span>
+                                    }
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <a href="/users/administration" class="btn btn-secondary form-control">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </a>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <p><em>Not authorized</em></p>
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    [SupplyParameterFromForm] public UserEditModel userModel { get; set; } = new();
+
+    public bool IsLoading { get; set; } = true;
+    private ApplicationUser? user;
+    private string currentUserRole = SD.Role_Member;
+    private List<string> availableRoles = new() { SD.Role_Admin, SD.Role_Moderator, SD.Role_Member };
+    private bool isLastAdmin = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            user = await _userRepository.GetUserByIdAsync(Id);
+            if (user != null)
+            {
+                userModel = new UserEditModel
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    Balance = user.Balance
+                };
+
+                // Load user role (should be only one)
+                var roles = await _userRepository.GetUserRolesAsync(user.Id);
+                currentUserRole = roles.FirstOrDefault() ?? SD.Role_Member;
+
+                // Check if this is the last admin
+                isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
+            }
+        }
+        IsLoading = false;
+    }
+
+    private async Task UpdateUser()
+    {
+        IsLoading = true;
+
+        try
+        {
+            if (user != null)
+            {
+                user.FirstName = userModel.FirstName;
+                user.LastName = userModel.LastName;
+                user.Email = userModel.Email;
+                user.UserName = userModel.UserName;
+                user.Balance = userModel.Balance;
+                user.NormalizedEmail = userModel.Email.ToUpper();
+                user.NormalizedUserName = userModel.UserName.ToUpper();
+
+                await _userRepository.UpdateUserAsync(user);
+
+                _js?.ToastrSuccess("User updated successfully");
+                _navigationManager.NavigateTo("/users/administration");
+            }
+        }
+        catch (Exception ex)
+        {
+            _js?.ToastrError($"Error updating user: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandleRoleChange(string newRole)
+    {
+        try
+        {
+            if (user == null || newRole == currentUserRole) return;
+
+            // Check if trying to change admin role when this is the last admin
+            if (currentUserRole == SD.Role_Admin && isLastAdmin && newRole != SD.Role_Admin)
+            {
+                _js?.ToastrError("Cannot change role of the last admin user");
+                return;
+            }
+
+            // Remove current role
+            if (!string.IsNullOrEmpty(currentUserRole))
+            {
+                var removeResult = await _userRepository.RemoveUserFromRoleAsync(user.Id, currentUserRole);
+                if (!removeResult)
+                {
+                    _js?.ToastrError($"Failed to remove current role {currentUserRole}");
+                    return;
+                }
+            }
+
+            // Add new role
+            var addResult = await _userRepository.AddUserToRoleAsync(user.Id, newRole);
+            if (addResult)
+            {
+                currentUserRole = newRole;
+                _js?.ToastrSuccess($"Role changed to {newRole} successfully");
+
+                // Update the last admin status
+                isLastAdmin = await _userRepository.IsLastAdminAsync(user.Id);
+                StateHasChanged();
+            }
+            else
+            {
+                // If adding new role failed, try to restore the old role
+                await _userRepository.AddUserToRoleAsync(user.Id, currentUserRole);
+                _js?.ToastrError($"Failed to change role to {newRole}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _js?.ToastrError($"Error updating role: {ex.Message}");
+        }
+    }
+
+    public class UserEditModel
+    {
+        public string Id { get; set; } = "";
+
+        [Required]
+        [StringLength(50)]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [StringLength(50)]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(50)]
+        public string UserName { get; set; } = "";
+
+        [Range(typeof(decimal), "-999999.99", "999999.99")]
+        public decimal Balance { get; set; } = 0;
+    }
+}
