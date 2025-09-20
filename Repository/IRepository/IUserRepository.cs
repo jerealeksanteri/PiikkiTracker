@@ -13,5 +13,10 @@ namespace PiikkiTracker.Repository.IRepository
         Task<bool> DeleteAllUserProductsAsync(string userId);
         Task<bool> ResetUserDataAsync(string userId);
         Task<bool> ResetUserPasswordAsync(string userId, string newPassword);
+        Task<IList<string>> GetUserRolesAsync(string userId);
+        Task<bool> AddUserToRoleAsync(string userId, string role);
+        Task<bool> RemoveUserFromRoleAsync(string userId, string role);
+        Task<bool> IsLastAdminAsync(string userId);
+        Task<int> GetAdminCountAsync();
     }
 }
