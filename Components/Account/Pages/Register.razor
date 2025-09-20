@@ -106,20 +106,22 @@
 
         Logger.LogInformation("User created a new account with password.");
 
-        if (!await RoleManager.RoleExistsAsync(Input.Role))
+        // Ensure roles exist
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Admin))
         {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Admin));
+        }
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Member))
+        {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Member));
+        }
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Moderator))
+        {
             await RoleManager.CreateAsync(new IdentityRole(SD.Role_Moderator));
         }
 
-        if (Input.Role is not null) {
-            await UserManager.AddToRoleAsync(user, Input.Role);
-        }
-        else
-        {
-            await UserManager.AddToRoleAsync(user, SD.Role_Member);
-        }
+        // Always assign Member role for normal registration
+        await UserManager.AddToRoleAsync(user, SD.Role_Member);
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -190,7 +192,5 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
-
-        public string? Role { get; set; }
     }
 }
