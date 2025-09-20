@@ -239,5 +239,41 @@ namespace PiikkiTracker.Repository
             var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
             return adminUsers.Count;
         }
+
+        public async Task<IEnumerable<ApplicationUser>> GetTopSpendersAsync(int count = 5)
+        {
+            var usersWithSpending = await _context.Users
+                .Include(u => u.UserProducts)
+                    .ThenInclude(up => up.Product)
+                .ToListAsync();
+
+            return usersWithSpending
+                .Where(u => u.UserProducts != null && u.UserProducts.Any())
+                .OrderByDescending(u => u.UserProducts.Sum(up => up.Product?.Price ?? 0))
+                .Take(count)
+                .ToList();
+        }
+
+        public async Task<IEnumerable<ApplicationUser>> GetTopJobPerformersAsync(int count = 5)
+        {
+            var usersWithJobs = await _context.Users
+                .Include(u => u.UserJobs)
+                    .ThenInclude(uj => uj.Job)
+                .ToListAsync();
+
+            return usersWithJobs
+                .Where(u => u.UserJobs != null && u.UserJobs.Any())
+                .OrderByDescending(u => u.UserJobs.Count())
+                .Take(count)
+                .ToList();
+        }
+
+        public async Task<IEnumerable<ApplicationUser>> GetTopBalanceHoldersAsync(int count = 5)
+        {
+            return await _context.Users
+                .OrderByDescending(u => u.Balance)
+                .Take(count)
+                .ToListAsync();
+        }
     }
 }

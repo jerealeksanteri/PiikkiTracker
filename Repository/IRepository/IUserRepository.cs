@@ -18,5 +18,8 @@ namespace PiikkiTracker.Repository.IRepository
         Task<bool> RemoveUserFromRoleAsync(string userId, string role);
         Task<bool> IsLastAdminAsync(string userId);
         Task<int> GetAdminCountAsync();
+        Task<IEnumerable<ApplicationUser>> GetTopSpendersAsync(int count = 5);
+        Task<IEnumerable<ApplicationUser>> GetTopJobPerformersAsync(int count = 5);
+        Task<IEnumerable<ApplicationUser>> GetTopBalanceHoldersAsync(int count = 5);
     }
 }
