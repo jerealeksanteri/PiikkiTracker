@@ -1,0 +1,38 @@
+@using PiikkiTracker.Services
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<button class="theme-toggle" @onclick="ToggleTheme" title="Toggle theme">
+    @if (ThemeService.CurrentTheme == "light")
+    {
+        <i class="bi bi-moon-fill" aria-hidden="true"></i>
+    }
+    else
+    {
+        <i class="bi bi-sun-fill" aria-hidden="true"></i>
+    }
+</button>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeService.InitializeThemeAsync();
+        ThemeService.ThemeChanged += OnThemeChanged;
+        StateHasChanged();
+    }
+
+    private async Task ToggleTheme()
+    {
+        await ThemeService.ToggleThemeAsync();
+    }
+
+    private void OnThemeChanged(string newTheme)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.ThemeChanged -= OnThemeChanged;
+    }
+}
