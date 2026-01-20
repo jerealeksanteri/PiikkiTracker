@@ -3,7 +3,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 
-<nav class="navbar navbar-expand-md navbar-dark bg-dark pb-2 pt-2">
+<nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
 	<div class="container-fluid">
 		<a class="navbar-brand" href="">
 			<img src="images/tabtrackerlogo.png" aria-hidden="true" height="40rem"/>
@@ -64,7 +64,8 @@
 
 					<Authorized>
 						<li class="nav-item">
-							<NavLink class="nav-link btn btn-dark active me-2" href="Account/Manage">
+							<NavLink class="nav-link me-2" href="Account/Manage">
+								<i class="bi bi-person-circle" aria-hidden="true"></i>
 								@(authContext?.User?.Identity?.Name)
 							</NavLink>
 						</li>
@@ -73,7 +74,7 @@
 								<AntiforgeryToken />
 								<input type="hidden" name="ReturnUrl" value="" />
 								<button type="submit" class="nav-link btn btn-success">
-									<span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+									<i class="bi bi-box-arrow-right" aria-hidden="true"></i> Logout
 								</button>
 							</form>
 						</li>
@@ -82,19 +83,22 @@
 
 					<NotAuthorized>
 						<li class="nav-item">
-							<NavLink class="nav-link" href="Account/Register">
-								<span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+							<NavLink class="nav-link me-2" href="Account/Register">
+								<i class="bi bi-person-plus" aria-hidden="true"></i> Register
 							</NavLink>
 						</li>
 						<li class="nav-item">
-							<NavLink class="nav-link btn btn-success" href="Account/Login">
-								<span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+							<NavLink class="nav-link btn btn-primary" href="Account/Login">
+								<i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Login
 							</NavLink>
 						</li>
 					</NotAuthorized>
 
-
 				</AuthorizeView>
+
+				<li class="nav-item ms-2">
+					<ThemeToggle @rendermode="InteractiveServer" />
+				</li>
 			</ul>
 		</div>
 	</div>

@@ -7,21 +7,34 @@
     position: absolute;
     top: 0.5rem;
     right: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+    transition: all 0.15s ease-in-out;
 }
 
 .navbar-toggler:checked {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar-toggler:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
 .top-row {
     min-height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, var(--app-sidebar-bg) 0%, #1a202c 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-brand {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white !important;
+    letter-spacing: -0.025em;
 }
 
 .bi {
@@ -68,7 +81,7 @@
 
 .nav-item {
     font-size: 0.9rem;
-    padding-bottom: 0.5rem;
+    padding: 0.25rem 1rem;
 }
 
     .nav-item:first-of-type {
@@ -80,33 +93,76 @@
     }
 
     .nav-item ::deep .nav-link {
-        color: #d7d7d7;
+        color: var(--app-sidebar-color);
         background: none;
         border: none;
-        border-radius: 4px;
-        height: 3rem;
+        border-radius: 0.5rem;
+        height: 2.75rem;
         display: flex;
         align-items: center;
-        line-height: 3rem;
+        line-height: 2.75rem;
         width: 100%;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        transition: all 0.15s ease-in-out;
+        margin-bottom: 0.25rem;
     }
 
 .nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.37);
+    background-color: var(--app-sidebar-active);
     color: white;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .nav-item ::deep .nav-link:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: var(--app-sidebar-hover);
     color: white;
+    transform: translateX(4px);
 }
 
 .nav-scrollable {
     display: none;
+    background: linear-gradient(180deg, var(--app-sidebar-bg) 0%, #1a202c 100%);
+    box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-toggler:checked ~ .nav-scrollable {
     display: block;
+}
+
+/* Dark mode overrides for sidebar */
+:root[data-theme="dark"] .top-row {
+    background: linear-gradient(135deg, var(--app-sidebar-bg) 0%, #111827 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .nav-scrollable {
+    background: linear-gradient(180deg, var(--app-sidebar-bg) 0%, #111827 100%);
+}
+
+:root[data-theme="dark"] .nav-item ::deep .nav-link {
+    color: var(--app-sidebar-color);
+}
+
+:root[data-theme="dark"] .nav-item ::deep a.active {
+    background-color: var(--app-sidebar-active);
+    color: white;
+}
+
+:root[data-theme="dark"] .nav-item ::deep .nav-link:hover {
+    background-color: var(--app-sidebar-hover);
+    color: white;
+}
+
+:root[data-theme="dark"] .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .navbar-toggler:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 @media (min-width: 641px) {
